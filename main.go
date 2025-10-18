@@ -34,6 +34,14 @@ type BookDTO struct {
 	Price       float64 `json:"price"`        // Price of the book
 }
 
+// Update Book
+type PatchBookDTO struct {
+	ID       string  `json:"id"`       // Unique identifier for the book
+	Pages    int     `json:"pages"`    // Number of pages
+	Language string  `json:"language"` // Language of the book
+	Price    float64 `json:"price"`    // Price of the book
+}
+
 // success dto
 type SuccessDTO struct {
 	SuccessCode    string `json:"status_code"`
@@ -59,6 +67,7 @@ func main() {
 	r.GET("/book/books", GetBooks)
 	r.GET("/book/book/:id", GetBook)
 	r.DELETE("/book/book/:id", DeleteBook)
+	r.PATCH("/book/book/:id", PatchBook)
 	//Book Server
 	s := &http.Server{
 		Addr:           ":8080",
@@ -87,7 +96,7 @@ func CreateBook(c *gin.Context) {
 	//Print Incoming Request
 	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, book)
 	//Check Already Exists Book Record
-	if isBookExists(book) {
+	if isBookExists(book.ID, book.Title) {
 		//Response
 		c.JSON(http.StatusOK, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
@@ -127,7 +136,7 @@ func GetBook(c *gin.Context) {
 	//Print Incoming Request
 	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book ID :: %s", c.Request.URL, c.Request.Method, id)
 	//IsBookExists
-	if !isBookExists(book) {
+	if !isBookExists(id, "") {
 		//Response
 		c.JSON(http.StatusOK, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
@@ -156,6 +165,47 @@ func GetBook(c *gin.Context) {
 	})
 }
 
+// Put Book By Id
+func PatchBook(c *gin.Context) {
+	//Book Details
+	var book PatchBookDTO
+	//BindJSON
+	jsonRes := Bindjson(c, &book)
+	if jsonRes {
+		return
+	}
+	//Validate JSON
+	jsonValid := ValidateJson(c, &book)
+	if jsonValid {
+		return
+	}
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book ID :: %s", c.Request.URL, c.Request.Method, book.ID)
+	//IsBookExists
+	if !isBookExists(book.ID, "") {
+		//Response
+		c.JSON(http.StatusOK, ErrorDTO{
+			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
+			ErrorMessage: fmt.Sprintf("Book having book ID - %s  don't exists", book.ID),
+		})
+		return
+	}
+	//If Book exists, save the response in book
+	for i := 0; i < len(BooksData); i++ {
+		if BooksData[i].ID == book.ID {
+			BooksData[i].Language = book.Language
+			BooksData[i].Pages = book.Pages
+			BooksData[i].Price = book.Price
+		}
+	}
+	//Response
+	c.JSON(http.StatusOK, SuccessDTO{
+		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
+		SuccessMessage: fmt.Sprintf("Book Id %s record has been updated successfully", book.ID),
+		CustomMessage:  GetBookById(book.ID),
+	})
+}
+
 // Delete Book By Id
 func DeleteBook(c *gin.Context) {
 	//Book ID
@@ -167,7 +217,7 @@ func DeleteBook(c *gin.Context) {
 	//Print Incoming Request
 	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book ID :: %s --- Title :: %s", c.Request.URL, c.Request.Method, id, title)
 	//IsBookExists
-	if !isBookExists(book) {
+	if !isBookExists(book.ID, "") {
 		//Response
 		c.JSON(http.StatusOK, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
@@ -220,10 +270,10 @@ func ValidateJson(c *gin.Context, data any) bool {
 }
 
 // Check already exists book record
-func isBookExists(book BookDTO) bool {
+func isBookExists(id, title string) bool {
 	for i := 0; i < len(BooksData); i++ {
-		if (BooksData[i].ID == book.ID) || (BooksData[i].Title == book.Title) {
-			log.Warn().Msgf("Book having book ID - %s and Title - %s already exists", book.ID, findBookTitle(book.ID))
+		if (BooksData[i].ID == id) || (BooksData[i].Title == title) || (BooksData[i].Title == "") {
+			log.Warn().Msgf("Book having book ID - %s and Title - %s already exists", id, findBookTitle(id))
 			return true
 		}
 	}
@@ -248,4 +298,23 @@ func findBookTitle(id string) string {
 		}
 	}
 	return title
+}
+
+// Get Book By Id
+func GetBookById(id string) BookDTO {
+	var book BookDTO
+	for i := 0; i < len(BooksData); i++ {
+		if BooksData[i].ID == id {
+			book.ID = BooksData[i].ID
+			book.Title = BooksData[i].Title
+			book.Author = BooksData[i].Author
+			book.PublishedAt = BooksData[i].PublishedAt
+			book.Publisher = BooksData[i].Publisher
+			book.ISBN = BooksData[i].ISBN
+			book.Language = BooksData[i].Language
+			book.Pages = BooksData[i].Pages
+			book.Price = BooksData[i].Price
+		}
+	}
+	return book
 }
