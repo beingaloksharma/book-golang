@@ -38,6 +38,7 @@ type BookDTO struct {
 type SuccessDTO struct {
 	SuccessCode    string `json:"status_code"`
 	SuccessMessage string `json:"status_message,omitempty"`
+	Total          int    `json:"total,omitempty"`
 	CustomMessage  any    `json:"books,omitempty"`
 }
 
@@ -54,9 +55,10 @@ func main() {
 		log.Info().Msgf("endpoint %v %v %v %v\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
 	//Register endpoint
-	r.POST("/book/create", Create)
+	r.POST("/book/create", CreateBook)
 	r.GET("/book/books", GetBooks)
 	r.GET("/book/book/:id", GetBook)
+	r.DELETE("/book/book/:id", DeleteBook)
 	//Book Server
 	s := &http.Server{
 		Addr:           ":8080",
@@ -69,7 +71,7 @@ func main() {
 }
 
 // Save a new record
-func Create(c *gin.Context) {
+func CreateBook(c *gin.Context) {
 	//Declare DTO for Book
 	var book BookDTO
 	//BindJSON
@@ -108,6 +110,7 @@ func GetBooks(c *gin.Context) {
 	//Response
 	c.JSON(http.StatusOK, SuccessDTO{
 		SuccessCode:   fmt.Sprintf("%d", http.StatusOK),
+		Total:         len(BooksData),
 		CustomMessage: BooksData,
 	})
 }
@@ -149,8 +152,34 @@ func GetBook(c *gin.Context) {
 	})
 }
 
+// Delete Book By Id
+func DeleteBook(c *gin.Context) {
+	//Book ID
+	id := c.Params.ByName("id")
+	//Book Details
+	var book BookDTO
+	book.ID = id
+	title := findBookTitle(id)
+	//IsBookExists
+	if !isBookExists(book) {
+		//Response
+		c.JSON(http.StatusOK, ErrorDTO{
+			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
+			ErrorMessage: fmt.Sprintf("Book having book ID - %s  doesn't exists", book.ID),
+		})
+		return
+	}
+	//Delete Book
+	deleteBookById(id)
+	//Response
+	c.JSON(http.StatusOK, SuccessDTO{
+		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
+		SuccessMessage: fmt.Sprintf("Book having book ID - %s and Title - %s is deleted", book.ID, title),
+	})
+}
+
 // BindJson Structure
-func Bindjson(c *gin.Context, data interface{}) bool {
+func Bindjson(c *gin.Context, data any) bool {
 	//Check JSON according to given structure
 	if err := c.BindJSON(&data); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorDTO{
@@ -165,7 +194,7 @@ func Bindjson(c *gin.Context, data interface{}) bool {
 }
 
 // Validate JSON Structure
-func ValidateJson(c *gin.Context, data interface{}) bool {
+func ValidateJson(c *gin.Context, data any) bool {
 	//Validate JSON according to given structure
 	validation := validator.New()
 	if err := validation.Struct(data); err != nil {
@@ -189,4 +218,24 @@ func isBookExists(book BookDTO) bool {
 		}
 	}
 	return false
+}
+
+// Check already exists book record
+func deleteBookById(id string) {
+	for i := 0; i < len(BooksData); i++ {
+		if BooksData[i].ID == id {
+			BooksData = append(BooksData[:i], BooksData[i+1:]...)
+		}
+	}
+}
+
+// Return Book Title By ID
+func findBookTitle(id string) string {
+	var title string
+	for i := 0; i < len(BooksData); i++ {
+		if BooksData[i].ID == id {
+			title = BooksData[i].Title
+		}
+	}
+	return title
 }
