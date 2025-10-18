@@ -23,23 +23,23 @@ var BooksData []BookDTO
 
 // Book Structure
 type BookDTO struct {
-	ID          string  `json:"id"`           // Unique identifier for the book
-	Title       string  `json:"title"`        // Title of the book
-	Author      string  `json:"author"`       // Author's name
-	Publisher   string  `json:"publisher"`    // Publisher's name
-	PublishedAt string  `json:"published_at"` // Publication date (could be string or time.Time)
-	ISBN        string  `json:"isbn"`         // ISBN number
-	Pages       int     `json:"pages"`        // Number of pages
-	Language    string  `json:"language"`     // Language of the book
-	Price       float64 `json:"price"`        // Price of the book
+	ID          string  `json:"id" validate:"required"`           // Unique identifier for the book
+	Title       string  `json:"title" validate:"required"`        // Title of the book
+	Author      string  `json:"author" validate:"required"`       // Author's name
+	Publisher   string  `json:"publisher" validate:"required"`    // Publisher's name
+	PublishedAt string  `json:"published_at" validate:"required"` // Publication date (could be string or time.Time)
+	ISBN        string  `json:"isbn" validate:"required"`         // ISBN number
+	Pages       int     `json:"pages" validate:"required"`        // Number of pages
+	Language    string  `json:"language" validate:"required"`     // Language of the book
+	Price       float64 `json:"price" validate:"required"`        // Price of the book
 }
 
 // Update Book
 type PatchBookDTO struct {
-	ID       string  `json:"id"`       // Unique identifier for the book
-	Pages    int     `json:"pages"`    // Number of pages
-	Language string  `json:"language"` // Language of the book
-	Price    float64 `json:"price"`    // Price of the book
+	ID       string  `json:"id" validate:"required"`       // Unique identifier for the book
+	Pages    int     `json:"pages" validate:"required"`    // Number of pages
+	Language string  `json:"language" validate:"required"` // Language of the book
+	Price    float64 `json:"price" validate:"required"`    // Price of the book
 }
 
 // success dto
@@ -68,6 +68,7 @@ func main() {
 	r.GET("/book/book/:id", GetBook)
 	r.DELETE("/book/book/:id", DeleteBook)
 	r.PATCH("/book/book/:id", PatchBook)
+	r.PUT("/book/book/:id", PutBook)
 	//Book Server
 	s := &http.Server{
 		Addr:           ":8080",
@@ -167,6 +168,8 @@ func GetBook(c *gin.Context) {
 
 // Put Book By Id
 func PatchBook(c *gin.Context) {
+	//Book ID
+	id := c.Params.ByName("id")
 	//Book Details
 	var book PatchBookDTO
 	//BindJSON
@@ -180,7 +183,16 @@ func PatchBook(c *gin.Context) {
 		return
 	}
 	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book ID :: %s", c.Request.URL, c.Request.Method, book.ID)
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book :: %+v", c.Request.URL, c.Request.Method, book)
+	//check Id
+	if book.ID != id {
+		//Response
+		c.JSON(http.StatusOK, ErrorDTO{
+			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
+			ErrorMessage: fmt.Sprintf("URL Param ID - %s and Book ID - %s are different - ", book.ID, id),
+		})
+		return
+	}
 	//IsBookExists
 	if !isBookExists(book.ID, "") {
 		//Response
@@ -193,6 +205,63 @@ func PatchBook(c *gin.Context) {
 	//If Book exists, save the response in book
 	for i := 0; i < len(BooksData); i++ {
 		if BooksData[i].ID == book.ID {
+			BooksData[i].Price = book.Price
+			BooksData[i].Pages = book.Pages
+			BooksData[i].Language = book.Language
+		}
+	}
+	//Response
+	c.JSON(http.StatusOK, SuccessDTO{
+		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
+		SuccessMessage: fmt.Sprintf("Book Id %s record has been updated successfully", book.ID),
+		CustomMessage:  GetBookById(book.ID),
+	})
+}
+
+func PutBook(c *gin.Context) {
+	//Book ID
+	id := c.Params.ByName("id")
+	//Book Details
+	var book BookDTO
+	//BindJSON
+	jsonRes := Bindjson(c, &book)
+	if jsonRes {
+		return
+	}
+	//Validate JSON
+	jsonValid := ValidateJson(c, &book)
+	if jsonValid {
+		return
+	}
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book  :: %v", c.Request.URL, c.Request.Method, book)
+	//check Id
+	if book.ID != id {
+		//Response
+		c.JSON(http.StatusOK, ErrorDTO{
+			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
+			ErrorMessage: fmt.Sprintf("URL Param ID - %s and Book ID - %s are different - ", book.ID, id),
+		})
+		return
+	}
+	//IsBookExists
+	if !isBookExists(book.ID, "") {
+		//Response
+		c.JSON(http.StatusOK, ErrorDTO{
+			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
+			ErrorMessage: fmt.Sprintf("Book having book ID - %s  don't exists", book.ID),
+		})
+		return
+	}
+	//If Book exists, save the response in book
+	for i := 0; i < len(BooksData); i++ {
+		if BooksData[i].ID == book.ID {
+			BooksData[i].ID = book.ID
+			BooksData[i].Title = book.Title
+			BooksData[i].Author = book.Author
+			BooksData[i].PublishedAt = book.PublishedAt
+			BooksData[i].Publisher = book.Publisher
+			BooksData[i].ISBN = book.ISBN
 			BooksData[i].Language = book.Language
 			BooksData[i].Pages = book.Pages
 			BooksData[i].Price = book.Price
