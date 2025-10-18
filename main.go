@@ -107,6 +107,8 @@ func CreateBook(c *gin.Context) {
 
 // Get All Books
 func GetBooks(c *gin.Context) {
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s ", c.Request.URL, c.Request.Method)
 	//Response
 	c.JSON(http.StatusOK, SuccessDTO{
 		SuccessCode:   fmt.Sprintf("%d", http.StatusOK),
@@ -122,6 +124,8 @@ func GetBook(c *gin.Context) {
 	//Book Details
 	var book BookDTO
 	book.ID = id
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book ID :: %s", c.Request.URL, c.Request.Method, id)
 	//IsBookExists
 	if !isBookExists(book) {
 		//Response
@@ -160,6 +164,8 @@ func DeleteBook(c *gin.Context) {
 	var book BookDTO
 	book.ID = id
 	title := findBookTitle(id)
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book ID :: %s --- Title :: %s", c.Request.URL, c.Request.Method, id, title)
 	//IsBookExists
 	if !isBookExists(book) {
 		//Response
@@ -180,6 +186,8 @@ func DeleteBook(c *gin.Context) {
 
 // BindJson Structure
 func Bindjson(c *gin.Context, data any) bool {
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Data :: %+v", c.Request.URL, c.Request.Method, data)
 	//Check JSON according to given structure
 	if err := c.BindJSON(&data); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorDTO{
@@ -195,6 +203,8 @@ func Bindjson(c *gin.Context, data any) bool {
 
 // Validate JSON Structure
 func ValidateJson(c *gin.Context, data any) bool {
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Data :: %+v", c.Request.URL, c.Request.Method, data)
 	//Validate JSON according to given structure
 	validation := validator.New()
 	if err := validation.Struct(data); err != nil {
@@ -213,7 +223,7 @@ func ValidateJson(c *gin.Context, data any) bool {
 func isBookExists(book BookDTO) bool {
 	for i := 0; i < len(BooksData); i++ {
 		if (BooksData[i].ID == book.ID) || (BooksData[i].Title == book.Title) {
-			log.Warn().Msgf("Book having book ID - %s and Title - %s already exists", book.ID, book.Title)
+			log.Warn().Msgf("Book having book ID - %s and Title - %s already exists", book.ID, findBookTitle(book.ID))
 			return true
 		}
 	}
