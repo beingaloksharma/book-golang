@@ -27,6 +27,31 @@ var CartData []CheckOut
 // Cart Items
 var carts []CartItem
 
+// Users Data
+var Users []User
+
+// User
+type User struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LoginDetails struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type Address struct {
+	Add []string `json:"address"`
+}
+
+type OrderDetails struct {
+	Name string   `json:"name"`
+	Item CartItem `json:"items"`
+	Add  string   `json:"address"`
+}
+
 // Book Structure
 type BookDTO struct {
 	ID          string  `json:"id" validate:"required"`           // Unique identifier for the book
@@ -86,15 +111,27 @@ func main() {
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
 		log.Info().Msgf("endpoint %v %v %v %v\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
+	user := r.Group("/user")
+	{
+		user.POST("/signup", CreateUser)
+		user.POST("/signin", LoginUser)
+	}
 	//Register endpoint
-	r.POST("/book/create", CreateBook)
-	r.GET("/book/books", GetBooks)
-	r.GET("/book/book/:id", GetBook)
-	r.DELETE("/book/book/:id", DeleteBook)
-	r.PATCH("/book/book/:id", PatchBook)
-	r.PUT("/book/book/:id", PutBook)
-	r.POST("/cart/cart", AddToCart)
-	r.GET("/cart/viewcart", ViewCart)
+	book := r.Group("/book")
+	{
+		book.POST("/create", CreateBook)
+		book.GET("/books", GetBooks)
+		book.GET("/book/:id", GetBook)
+		book.DELETE("/book/:id", DeleteBook)
+		book.PATCH("/book/:id", PatchBook)
+		book.PUT("/book/:id", PutBook)
+	}
+	cart := r.Group("/cart")
+	{
+		cart.POST("/cart", AddToCart)
+		cart.GET("/viewcart", ViewCart)
+	}
+
 	//Book Server
 	s := &http.Server{
 		Addr:           ":8080",
@@ -104,6 +141,82 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 	s.ListenAndServe()
+}
+
+// Save a new record
+func CreateUser(c *gin.Context) {
+	//Declare DTO for Book
+	var user User
+	//BindJSON
+	jsonRes := Bindjson(c, &user)
+	if jsonRes {
+		return
+	}
+	//Validate JSON
+	jsonValid := ValidateJson(c, &user)
+	if jsonValid {
+		return
+	}
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, user)
+	//Check Already Exists Book Record
+	if isUserExists(user.Username) {
+		//Response
+		c.JSON(http.StatusOK, ErrorDTO{
+			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
+			ErrorMessage: fmt.Sprintf("Username - %s already exists", user.Username),
+		})
+		return
+	}
+	Users = append(Users, user)
+	log.Info().Msgf("User Data :: %+v", Users)
+	//Response
+	c.JSON(http.StatusOK, SuccessDTO{
+		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
+		SuccessMessage: "User Created Successfully",
+		CustomMessage:  BooksData,
+	})
+}
+
+func LoginUser(c *gin.Context) {
+	var user LoginDetails
+	//BindJSON
+	jsonRes := Bindjson(c, &user)
+	if jsonRes {
+		return
+	}
+	//Validate JSON
+	jsonValid := ValidateJson(c, &user)
+	if jsonValid {
+		return
+	}
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, user)
+	//Check Already Exists Book Record
+	if !isUserExists(user.Username) {
+		//Response
+		c.JSON(http.StatusOK, ErrorDTO{
+			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
+			ErrorMessage: fmt.Sprintf("Username - %s doesn't exists", user.Username),
+		})
+		return
+	}
+	//Check user credentials
+	for i := 0; i < len(Users); i++ {
+		if Users[i].Username == user.Username && Users[i].Password == user.Password {
+			log.Info().Msgf("Login SuccessFully for Username - %s", user.Username)
+			c.JSON(http.StatusOK, SuccessDTO{
+				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
+				SuccessMessage: fmt.Sprintf("Login SuccessFully for Username - %s", user.Username),
+			})
+			return
+		}
+	}
+	//Response
+	c.JSON(http.StatusOK, ErrorDTO{
+		ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
+		ErrorMessage: "You don't have account with us",
+	})
 }
 
 // Save a new record
@@ -369,6 +482,16 @@ func isBookExists(id, title string) bool {
 	for i := 0; i < len(BooksData); i++ {
 		if (BooksData[i].ID == id) || (BooksData[i].Title == title) {
 			log.Warn().Msgf("Book having book ID - %s and Title - %s already exists", id, findBookTitle(id))
+			return true
+		}
+	}
+	return false
+}
+
+func isUserExists(username string) bool {
+	for i := 0; i < len(Users); i++ {
+		if Users[i].Username == username {
+			log.Warn().Msgf("Username  %s already exists", username)
 			return true
 		}
 	}
