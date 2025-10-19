@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,72 +17,6 @@ const (
 	REQUIREDREQUESTBODYMISSING = "Required Request Body Missing"
 )
 
-// Books Data
-var BooksData []BookDTO
-
-// Cart Data
-var CartData []CheckOut
-
-// Cart Items
-var carts []CartItem
-
-// Users Data
-var Users []User
-
-// To Store Current Username
-var activeUser string
-
-// User Address
-var UserAddress []Address
-
-// User
-type User struct {
-	Name     string `json:"name"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type LoginDetails struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type Address struct {
-	Add string `json:"address"`
-}
-
-type UserAddr struct {
-	Username string    `json:"username"`
-	UserAdds []Address `json:"address"`
-}
-
-type OrderDetails struct {
-	Name string   `json:"name"`
-	Item CartItem `json:"items"`
-	Add  string   `json:"address"`
-}
-
-// Book Structure
-type BookDTO struct {
-	ID          string  `json:"id" validate:"required"`           // Unique identifier for the book
-	Title       string  `json:"title" validate:"required"`        // Title of the book
-	Author      string  `json:"author" validate:"required"`       // Author's name
-	Publisher   string  `json:"publisher" validate:"required"`    // Publisher's name
-	PublishedAt string  `json:"published_at" validate:"required"` // Publication date (could be string or time.Time)
-	ISBN        string  `json:"isbn" validate:"required"`         // ISBN number
-	Pages       int     `json:"pages" validate:"required"`        // Number of pages
-	Language    string  `json:"language" validate:"required"`     // Language of the book
-	Price       float64 `json:"price" validate:"required"`        // Price of the book
-}
-
-// Update Book
-type PatchBookDTO struct {
-	ID       string  `json:"id" validate:"required"`       // Unique identifier for the book
-	Pages    int     `json:"pages" validate:"required"`    // Number of pages
-	Language string  `json:"language" validate:"required"` // Language of the book
-	Price    float64 `json:"price" validate:"required"`    // Price of the book
-}
-
 // success dto
 type SuccessDTO struct {
 	SuccessCode    string `json:"status_code"`
@@ -97,23 +29,6 @@ type SuccessDTO struct {
 type ErrorDTO struct {
 	ErrorCode    string `json:"error_code"`
 	ErrorMessage string `json:"error_message"`
-}
-
-// CartItem represents a book added to the user's shopping cart.
-type AddItem struct {
-	BookID string `json:"book_id"`
-}
-
-// Cart
-type CartItem struct {
-	BookID   string  `json:"book_id"`
-	Quantity int     `json:"quantity"`
-	Price    float64 `json:"price"`
-}
-
-type CheckOut struct {
-	Cart  []CartItem `json:"cart"`
-	Total float64    `json:"total"`
 }
 
 // Main
@@ -129,15 +44,16 @@ func main() {
 		user.POST("/signin", LoginUser)
 	}
 	r.POST("/user/address", UserAdd)
+	r.GET("/user/profile/:username", GetProfile)
 	//Register endpoint
 	book := r.Group("/book")
 	{
 		book.POST("", CreateBook)
 		book.GET("/books", GetBooks)
-		book.GET("/book/:id", GetBook)
-		book.DELETE("/book/:id", DeleteBook)
-		book.PATCH("/book/:id", PatchBook)
-		book.PUT("/book/:id", PutBook)
+		book.GET("/:id", GetBook)
+		book.DELETE("/:id", DeleteBook)
+		book.PATCH("/:id", PatchBook)
+		book.PUT("/:id", PutBook)
 	}
 	cart := r.Group("/cart")
 	{
@@ -156,341 +72,10 @@ func main() {
 	s.ListenAndServe()
 }
 
-// Save a new record
-func CreateUser(c *gin.Context) {
-	//Declare DTO for Book
-	var user User
-	//BindJSON
-	jsonRes := Bindjson(c, &user)
-	if jsonRes {
-		return
-	}
-	//Validate JSON
-	jsonValid := ValidateJson(c, &user)
-	if jsonValid {
-		return
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, user)
-	//Check Already Exists Book Record
-	if isUserExists(user.Username) {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
-			ErrorMessage: fmt.Sprintf("Username - %s already exists", user.Username),
-		})
-		return
-	}
-	Users = append(Users, user)
-	log.Info().Msgf("User Data :: %+v", Users)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: "User Created Successfully",
-		CustomMessage: map[string]string{
-			"username": user.Username,
-			"password": strings.Repeat("*", len(user.Password)),
-		},
-	})
-}
-
-func LoginUser(c *gin.Context) {
-	var user LoginDetails
-	//BindJSON
-	jsonRes := Bindjson(c, &user)
-	if jsonRes {
-		return
-	}
-	//Validate JSON
-	jsonValid := ValidateJson(c, &user)
-	if jsonValid {
-		return
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, user)
-	//Check Already Exists Book Record
-	if !isUserExists(user.Username) {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
-			ErrorMessage: fmt.Sprintf("Username - %s doesn't exists", user.Username),
-		})
-		return
-	}
-	//Check user credentials
-	for i := 0; i < len(Users); i++ {
-		if Users[i].Username == user.Username && Users[i].Password == user.Password {
-			activeUser = user.Username
-			log.Info().Msgf("Login SuccessFully for Username - %s", user.Username)
-			c.JSON(http.StatusOK, SuccessDTO{
-				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-				SuccessMessage: fmt.Sprintf("Login SuccessFully for Username - %s", user.Username),
-			})
-			return
-		}
-	}
-	//Response
-	c.JSON(http.StatusOK, ErrorDTO{
-		ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-		ErrorMessage: "You don't have account with us",
-	})
-}
-
-func UserAdd(c *gin.Context) {
-	//Declare DTO for Book
-	var add Address
-	//BindJSON
-	jsonRes := Bindjson(c, &add)
-	if jsonRes {
-		return
-	}
-	//Validate JSON
-	jsonValid := ValidateJson(c, &add)
-	if jsonValid {
-		return
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, add)
-	// Address
-	UserAddress = append(UserAddress, add)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: "User Address added Successfully",
-		CustomMessage: UserAddr{
-			Username: activeUser,
-			UserAdds: UserAddress,
-		},
-	})
-}
-
-// Save a new record
-func CreateBook(c *gin.Context) {
-	//Declare DTO for Book
-	var book BookDTO
-	//BindJSON
-	jsonRes := Bindjson(c, &book)
-	if jsonRes {
-		return
-	}
-	//Validate JSON
-	jsonValid := ValidateJson(c, &book)
-	if jsonValid {
-		return
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, book)
-	//Check Already Exists Book Record
-	if isBookExists(book.ID, book.Title) {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
-			ErrorMessage: fmt.Sprintf("Book having book ID - %s and Title - %s already exists", book.ID, book.Title),
-		})
-		return
-	}
-	BooksData = append(BooksData, book)
-	log.Info().Msgf("Book Data :: %+v", BooksData)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: "Book Record Created",
-		CustomMessage:  BooksData,
-	})
-}
-
-// Get All Books
-func GetBooks(c *gin.Context) {
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s ", c.Request.URL, c.Request.Method)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:   fmt.Sprintf("%d", http.StatusOK),
-		Total:         len(BooksData),
-		CustomMessage: BooksData,
-	})
-}
-
-// Get Book By Id
-func GetBook(c *gin.Context) {
-	//Book ID
-	id := c.Params.ByName("id")
-	//Book Details
-	var book BookDTO
-	book.ID = id
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book ID :: %s", c.Request.URL, c.Request.Method, id)
-	//IsBookExists
-	if !isBookExists(id, "") {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-			ErrorMessage: fmt.Sprintf("Book having book ID - %s  don't exists", book.ID),
-		})
-		return
-	}
-	//If Book exists, save the response in book
-	for i := 0; i < len(BooksData); i++ {
-		if BooksData[i].ID == book.ID {
-			book.ID = BooksData[i].ID
-			book.Title = BooksData[i].Title
-			book.Author = BooksData[i].Author
-			book.PublishedAt = BooksData[i].PublishedAt
-			book.Publisher = BooksData[i].Publisher
-			book.ISBN = BooksData[i].ISBN
-			book.Language = BooksData[i].Language
-			book.Pages = BooksData[i].Pages
-			book.Price = BooksData[i].Price
-		}
-	}
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:   fmt.Sprintf("%d", http.StatusOK),
-		CustomMessage: book,
-	})
-}
-
-// Put Book By Id
-func PatchBook(c *gin.Context) {
-	//Book ID
-	id := c.Params.ByName("id")
-	//Book Details
-	var book PatchBookDTO
-	//BindJSON
-	jsonRes := Bindjson(c, &book)
-	if jsonRes {
-		return
-	}
-	//Validate JSON
-	jsonValid := ValidateJson(c, &book)
-	if jsonValid {
-		return
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book :: %+v", c.Request.URL, c.Request.Method, book)
-	//check Id
-	if book.ID != id {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-			ErrorMessage: fmt.Sprintf("URL Param ID - %s and Book ID - %s are different - ", book.ID, id),
-		})
-		return
-	}
-	//IsBookExists
-	if !isBookExists(book.ID, "") {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-			ErrorMessage: fmt.Sprintf("Book having book ID - %s  don't exists", book.ID),
-		})
-		return
-	}
-	//If Book exists, save the response in book
-	for i := 0; i < len(BooksData); i++ {
-		if BooksData[i].ID == book.ID {
-			BooksData[i].Price = book.Price
-			BooksData[i].Pages = book.Pages
-			BooksData[i].Language = book.Language
-		}
-	}
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: fmt.Sprintf("Book Id %s record has been updated successfully", book.ID),
-		CustomMessage:  GetBookById(book.ID),
-	})
-}
-
-func PutBook(c *gin.Context) {
-	//Book ID
-	id := c.Params.ByName("id")
-	//Book Details
-	var book BookDTO
-	//BindJSON
-	jsonRes := Bindjson(c, &book)
-	if jsonRes {
-		return
-	}
-	//Validate JSON
-	jsonValid := ValidateJson(c, &book)
-	if jsonValid {
-		return
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book  :: %v", c.Request.URL, c.Request.Method, book)
-	//check Id
-	if book.ID != id {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-			ErrorMessage: fmt.Sprintf("URL Param ID - %s and Book ID - %s are different - ", book.ID, id),
-		})
-		return
-	}
-	//IsBookExists
-	if !isBookExists(book.ID, "") {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-			ErrorMessage: fmt.Sprintf("Book having book ID - %s  don't exists", book.ID),
-		})
-		return
-	}
-	//If Book exists, save the response in book
-	for i := 0; i < len(BooksData); i++ {
-		if BooksData[i].ID == book.ID {
-			BooksData[i].ID = book.ID
-			BooksData[i].Title = book.Title
-			BooksData[i].Author = book.Author
-			BooksData[i].PublishedAt = book.PublishedAt
-			BooksData[i].Publisher = book.Publisher
-			BooksData[i].ISBN = book.ISBN
-			BooksData[i].Language = book.Language
-			BooksData[i].Pages = book.Pages
-			BooksData[i].Price = book.Price
-		}
-	}
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: fmt.Sprintf("Book Id %s record has been updated successfully", book.ID),
-		CustomMessage:  GetBookById(book.ID),
-	})
-}
-
-// Delete Book By Id
-func DeleteBook(c *gin.Context) {
-	//Book ID
-	id := c.Params.ByName("id")
-	//Book Details
-	var book BookDTO
-	book.ID = id
-	title := findBookTitle(id)
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Book ID :: %s --- Title :: %s", c.Request.URL, c.Request.Method, id, title)
-	//IsBookExists
-	if !isBookExists(book.ID, "") {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-			ErrorMessage: fmt.Sprintf("Book having book ID - %s  doesn't exists", book.ID),
-		})
-		return
-	}
-	//Delete Book
-	deleteBookById(id)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: fmt.Sprintf("Book having book ID - %s and Title - %s is deleted", book.ID, title),
-	})
-}
-
 // BindJson Structure
 func Bindjson(c *gin.Context, data any) bool {
 	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Data :: %+v", c.Request.URL, c.Request.Method, data)
+	//log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Data :: %+v", c.Request.URL, c.Request.Method, data)
 	//Check JSON according to given structure
 	if err := c.BindJSON(&data); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorDTO{
@@ -507,7 +92,7 @@ func Bindjson(c *gin.Context, data any) bool {
 // Validate JSON Structure
 func ValidateJson(c *gin.Context, data any) bool {
 	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Data :: %+v", c.Request.URL, c.Request.Method, data)
+	//log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Data :: %+v", c.Request.URL, c.Request.Method, data)
 	//Validate JSON according to given structure
 	validation := validator.New()
 	if err := validation.Struct(data); err != nil {
@@ -520,139 +105,4 @@ func ValidateJson(c *gin.Context, data any) bool {
 		return true
 	}
 	return false
-}
-
-// Check already exists book record
-func isBookExists(id, title string) bool {
-	for i := 0; i < len(BooksData); i++ {
-		if (BooksData[i].ID == id) || (BooksData[i].Title == title) {
-			log.Warn().Msgf("Book having book ID - %s and Title - %s already exists", id, findBookTitle(id))
-			return true
-		}
-	}
-	return false
-}
-
-func isUserExists(username string) bool {
-	for i := 0; i < len(Users); i++ {
-		if Users[i].Username == username {
-			log.Warn().Msgf("Username  %s already exists", username)
-			return true
-		}
-	}
-	return false
-}
-
-// Check already exists book record
-func deleteBookById(id string) {
-	for i := 0; i < len(BooksData); i++ {
-		if BooksData[i].ID == id {
-			BooksData = append(BooksData[:i], BooksData[i+1:]...)
-		}
-	}
-}
-
-// Return Book Title By ID
-func findBookTitle(id string) string {
-	var title string
-	for i := 0; i < len(BooksData); i++ {
-		if BooksData[i].ID == id {
-			title = BooksData[i].Title
-		}
-	}
-	return title
-}
-
-// Get Book By Id
-func GetBookById(id string) BookDTO {
-	var book BookDTO
-	for i := 0; i < len(BooksData); i++ {
-		if BooksData[i].ID == id {
-			book.ID = BooksData[i].ID
-			book.Title = BooksData[i].Title
-			book.Author = BooksData[i].Author
-			book.PublishedAt = BooksData[i].PublishedAt
-			book.Publisher = BooksData[i].Publisher
-			book.ISBN = BooksData[i].ISBN
-			book.Language = BooksData[i].Language
-			book.Pages = BooksData[i].Pages
-			book.Price = BooksData[i].Price
-		}
-	}
-	return book
-}
-
-// Cart
-func AddToCart(c *gin.Context) {
-	//Declare DTO for Book
-	var item AddItem
-	//BindJSON
-	jsonRes := Bindjson(c, &item)
-	if jsonRes {
-		return
-	}
-	//Validate JSON
-	jsonValid := ValidateJson(c, &item)
-	if jsonValid {
-		return
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, item)
-	//Check Already Exists Book Record
-	if !isBookExists(item.BookID, "") {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
-			ErrorMessage: fmt.Sprintf("Book having book ID - %s and Title - %s doesn't exists", item.BookID, findBookTitle(item.BookID)),
-		})
-		return
-	}
-	CheckCartItem(item)
-	log.Info().Msgf("Cart Item :: %+v", carts)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: "Book Added in Your Cart",
-		CustomMessage:  carts,
-	})
-}
-
-func CheckCartItem(item AddItem) {
-	var cart CartItem
-	bookDetails := GetBookById(item.BookID)
-	cart.BookID = bookDetails.ID
-	cart.Quantity = 1
-	cart.Price = bookDetails.Price
-	if len(carts) == 0 {
-		carts = append(carts, cart)
-	} else {
-		for i := 0; i < len(carts); i++ {
-			if carts[i].BookID == item.BookID {
-				carts[i].Quantity = carts[i].Quantity + 1
-				return
-			}
-		}
-		carts = append(carts, cart)
-	}
-}
-
-// View Cart
-func ViewCart(c *gin.Context) {
-	//Store Total checkout value
-	var total float64
-	//Calculate Total Price
-	for i := 0; i < len(carts); i++ {
-		total = total + (float64(carts[i].Quantity) * carts[i].Price)
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s ", c.Request.URL, c.Request.Method)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode: fmt.Sprintf("%d", http.StatusOK),
-		Total:       len(carts),
-		CustomMessage: CheckOut{
-			Cart:  carts,
-			Total: total,
-		},
-	})
 }
