@@ -367,7 +367,7 @@ func ValidateJson(c *gin.Context, data any) bool {
 // Check already exists book record
 func isBookExists(id, title string) bool {
 	for i := 0; i < len(BooksData); i++ {
-		if (BooksData[i].ID == id) || (BooksData[i].Title == title) || (BooksData[i].Title == "") {
+		if (BooksData[i].ID == id) || (BooksData[i].Title == title) {
 			log.Warn().Msgf("Book having book ID - %s and Title - %s already exists", id, findBookTitle(id))
 			return true
 		}
@@ -476,13 +476,12 @@ func ViewCart(c *gin.Context) {
 	for i := 0; i < len(carts); i++ {
 		total = total + (float64(carts[i].Quantity) * carts[i].Price)
 	}
-
 	//Print Incoming Request
 	log.Info().Msgf("Request URL :: %s --- Request Method :: %s ", c.Request.URL, c.Request.Method)
 	//Response
 	c.JSON(http.StatusOK, SuccessDTO{
 		SuccessCode: fmt.Sprintf("%d", http.StatusOK),
-		Total:       len(CartData),
+		Total:       len(carts),
 		CustomMessage: CheckOut{
 			Cart:  carts,
 			Total: total,
