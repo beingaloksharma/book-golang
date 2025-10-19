@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,12 @@ var carts []CartItem
 // Users Data
 var Users []User
 
+// To Store Current Username
+var activeUser string
+
+// User Address
+var UserAddress []Address
+
 // User
 type User struct {
 	Name     string `json:"name"`
@@ -43,7 +50,12 @@ type LoginDetails struct {
 }
 
 type Address struct {
-	Add []string `json:"address"`
+	Add string `json:"address"`
+}
+
+type UserAddr struct {
+	Username string    `json:"username"`
+	UserAdds []Address `json:"address"`
 }
 
 type OrderDetails struct {
@@ -116,10 +128,11 @@ func main() {
 		user.POST("/signup", CreateUser)
 		user.POST("/signin", LoginUser)
 	}
+	r.POST("/user/address", UserAdd)
 	//Register endpoint
 	book := r.Group("/book")
 	{
-		book.POST("/create", CreateBook)
+		book.POST("", CreateBook)
 		book.GET("/books", GetBooks)
 		book.GET("/book/:id", GetBook)
 		book.DELETE("/book/:id", DeleteBook)
@@ -128,10 +141,9 @@ func main() {
 	}
 	cart := r.Group("/cart")
 	{
-		cart.POST("/cart", AddToCart)
+		cart.POST("", AddToCart)
 		cart.GET("/viewcart", ViewCart)
 	}
-
 	//Book Server
 	s := &http.Server{
 		Addr:           ":8080",
@@ -140,6 +152,7 @@ func main() {
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
+	// Start Server To Listen
 	s.ListenAndServe()
 }
 
@@ -174,7 +187,10 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, SuccessDTO{
 		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
 		SuccessMessage: "User Created Successfully",
-		CustomMessage:  BooksData,
+		CustomMessage: map[string]string{
+			"username": user.Username,
+			"password": strings.Repeat("*", len(user.Password)),
+		},
 	})
 }
 
@@ -204,6 +220,7 @@ func LoginUser(c *gin.Context) {
 	//Check user credentials
 	for i := 0; i < len(Users); i++ {
 		if Users[i].Username == user.Username && Users[i].Password == user.Password {
+			activeUser = user.Username
 			log.Info().Msgf("Login SuccessFully for Username - %s", user.Username)
 			c.JSON(http.StatusOK, SuccessDTO{
 				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
@@ -216,6 +233,34 @@ func LoginUser(c *gin.Context) {
 	c.JSON(http.StatusOK, ErrorDTO{
 		ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
 		ErrorMessage: "You don't have account with us",
+	})
+}
+
+func UserAdd(c *gin.Context) {
+	//Declare DTO for Book
+	var add Address
+	//BindJSON
+	jsonRes := Bindjson(c, &add)
+	if jsonRes {
+		return
+	}
+	//Validate JSON
+	jsonValid := ValidateJson(c, &add)
+	if jsonValid {
+		return
+	}
+	//Print Incoming Request
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, add)
+	// Address
+	UserAddress = append(UserAddress, add)
+	//Response
+	c.JSON(http.StatusOK, SuccessDTO{
+		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
+		SuccessMessage: "User Address added Successfully",
+		CustomMessage: UserAddr{
+			Username: activeUser,
+			UserAdds: UserAddress,
+		},
 	})
 }
 
