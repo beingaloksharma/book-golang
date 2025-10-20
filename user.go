@@ -9,46 +9,42 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Users Data
-var Users []User
+// Database
+var Users []ModelUser
+var UserAddress = make(map[string][]RequestUserAddressToAdd)
 
-// To Store Current Username
-var activeUser string
-
-// User Address
-var UserAddress []Address
-
-// User
-type User struct {
+// User Table
+type ModelUser struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-type LoginDetails struct {
+// DTO - Data Transfer Object
+// Login Request
+type RequestLogin struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-type Address struct {
+// Request to Add Address
+type RequestUserAddressToAdd struct {
 	Add string `json:"address"`
 }
 
-type UserAddr struct {
-	Username string    `json:"username"`
-	UserAdds []Address `json:"address"`
-}
-
-type UserProfile struct {
-	Name     string    `json:"name"`
-	Username string    `json:"username"`
-	UserAdds []Address `json:"address"`
+// Request to Get User Profile
+type ResponseUserProfile struct {
+	Name     string                    `json:"name"`
+	Username string                    `json:"username"`
+	Address  []RequestUserAddressToAdd `json:"address"`
+	Books    []ModelBook               `json:"books"`
+	Cart     []CheckOut                `json:"cart"`
 }
 
 // Save a new record
 func CreateUser(c *gin.Context) {
-	//Declare DTO for Book
-	var user User
+	//Request User Data
+	var user ModelUser
 	//BindJSON
 	jsonRes := Bindjson(c, &user)
 	if jsonRes {
@@ -64,18 +60,20 @@ func CreateUser(c *gin.Context) {
 	//Check Already Exists Book Record
 	if isUserExists(user.Username) {
 		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
+		c.JSON(http.StatusConflict, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
-			ErrorMessage: fmt.Sprintf("Username - %s already exists", user.Username),
+			ErrorMessage: fmt.Sprintf("Username - %s does not have an account", user.Username),
 		})
+		//Print Incoming Request
+		log.Warn().Msgf("Username - %s does not have an account", user.Username)
 		return
 	}
+	// Save user in table
 	Users = append(Users, user)
-	log.Info().Msgf("User Data :: %+v", Users)
 	//Response
 	c.JSON(http.StatusOK, SuccessDTO{
 		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: "User Created Successfully",
+		SuccessMessage: "New User Created Successfully",
 		CustomMessage: map[string]string{
 			"username": user.Username,
 			"password": strings.Repeat("*", len(user.Password)),
@@ -83,8 +81,10 @@ func CreateUser(c *gin.Context) {
 	})
 }
 
+// Login User
 func LoginUser(c *gin.Context) {
-	var user LoginDetails
+	//Request for User Login
+	var user RequestLogin
 	//BindJSON
 	jsonRes := Bindjson(c, &user)
 	if jsonRes {
@@ -97,37 +97,43 @@ func LoginUser(c *gin.Context) {
 	}
 	//Print Incoming Request
 	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, user)
-	//Check Already Exists Book Record
+	//Check Already Exists User Record
 	if !isUserExists(user.Username) {
 		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
-			ErrorMessage: fmt.Sprintf("Username - %s doesn't exists", user.Username),
+		c.JSON(http.StatusNotFound, ErrorDTO{
+			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
+			ErrorMessage: fmt.Sprintf("Username - %s don't have a account", user.Username),
 		})
+		//Print Incoming Request
+		log.Warn().Msgf("Username - %s don't have a account", user.Username)
 		return
 	}
 	//Check user credentials
 	for i := 0; i < len(Users); i++ {
 		if Users[i].Username == user.Username && Users[i].Password == user.Password {
-			activeUser = user.Username
-			log.Info().Msgf("Login SuccessFully for Username - %s", user.Username)
+			//Generate Token
+			token, _ := GenerateToken(user.Username)
+			log.Info().Msgf("Login SuccessFully for Username - %s and Password - %s", user.Username, strings.Repeat("*", len(user.Password)))
 			c.JSON(http.StatusOK, SuccessDTO{
 				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
 				SuccessMessage: fmt.Sprintf("Login SuccessFully for Username - %s", user.Username),
+				CustomMessage:  token,
 			})
 			return
 		}
 	}
-	//Response
-	c.JSON(http.StatusOK, ErrorDTO{
-		ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-		ErrorMessage: "You don't have account with us",
+	c.JSON(http.StatusUnauthorized, ErrorDTO{
+		ErrorCode:    fmt.Sprintf("%d", http.StatusUnauthorized),
+		ErrorMessage: "Invalid username or password",
 	})
 }
 
+// Add User Address
 func UserAdd(c *gin.Context) {
+	//To Store Active Username
+	activeUsername := c.GetString("username")
 	//Declare DTO for Book
-	var add Address
+	var add RequestUserAddressToAdd
 	//BindJSON
 	jsonRes := Bindjson(c, &add)
 	if jsonRes {
@@ -139,50 +145,59 @@ func UserAdd(c *gin.Context) {
 		return
 	}
 	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, add)
+	log.Info().Msgf("Username - %s :: Requested :: Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", activeUsername, c.Request.URL, c.Request.Method, add)
 	// Address
-	if isAddExists(add, activeUser) {
+	if isAddExists(add, activeUsername) {
 		//Response
 		c.JSON(http.StatusOK, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
 			ErrorMessage: fmt.Sprintf("Address - %s already exists", add.Add),
 		})
+		//Print Incoming Request
+		log.Warn().Msgf("Address - %s already exists", add.Add)
 		return
 	}
-	UserAddress = append(UserAddress, add)
+	if val, ok := UserAddress[activeUsername]; ok {
+		UserAddress[activeUsername] = append(val, add)
+	} else {
+		UserAddress[activeUsername] = []RequestUserAddressToAdd{
+			{Add: add.Add},
+		}
+	}
 	//Response
 	c.JSON(http.StatusOK, SuccessDTO{
 		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
 		SuccessMessage: "User Address added Successfully",
-		CustomMessage: UserAddr{
-			Username: activeUser,
-			UserAdds: UserAddress,
-		},
+		CustomMessage:  UserAddress[activeUsername],
 	})
 }
 
 func GetProfile(c *gin.Context) {
 	//Username
-	username := c.Params.ByName("username")
+	activeUsername := c.Params.ByName("username")
 	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Username  :: %v", c.Request.URL, c.Request.Method, username)
+	log.Info().Msgf("Request URL :: %s --- Request Method :: %s --- Username  :: %v", c.Request.URL, c.Request.Method, activeUsername)
 	//IsUserExists
-	if !isUserExists(username) {
+	if !isUserExists(activeUsername) {
 		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
+		c.JSON(http.StatusNotFound, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-			ErrorMessage: fmt.Sprintf("Username - %s  don't exists", username),
+			ErrorMessage: fmt.Sprintf("Username - %s does not have an account", activeUsername),
 		})
+		//Print Incoming Request
+		log.Warn().Msgf("Username - %s does not have an account", activeUsername)
 		return
 	}
 	//Response
 	c.JSON(http.StatusOK, SuccessDTO{
 		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: fmt.Sprintf("Profile of Username %s", username),
-		CustomMessage: UserProfile{
-			Name:     GetName(username),
-			Username: username,
-			UserAdds: UserAddress,
+		SuccessMessage: fmt.Sprintf("Profile of Username %s", activeUsername),
+		CustomMessage: ResponseUserProfile{
+			Name:     GetName(activeUsername),
+			Username: activeUsername,
+			Address:  UserAddress[activeUsername],
+			Books:    BooksData[activeUsername],
+			Cart:     CartData[activeUsername],
 		},
 	})
 }
@@ -191,7 +206,6 @@ func GetProfile(c *gin.Context) {
 func isUserExists(username string) bool {
 	for i := 0; i < len(Users); i++ {
 		if Users[i].Username == username {
-			log.Warn().Msgf("Username  %s already exists", username)
 			return true
 		}
 	}
@@ -199,11 +213,10 @@ func isUserExists(username string) bool {
 }
 
 // Check Is User Exists
-func isAddExists(add Address, username string) bool {
-	for i := 0; i < len(Users); i++ {
-		for j := 0; j < len(UserAddress); j++ {
-			if UserAddress[j].Add == add.Add && Users[i].Username == username {
-				log.Warn().Msgf("Address  %s already exists", add)
+func isAddExists(add RequestUserAddressToAdd, username string) bool {
+	if val, ok := UserAddress[username]; ok {
+		for i := 0; i < len(val); i++ {
+			if val[i] == add {
 				return true
 			}
 		}
@@ -213,11 +226,10 @@ func isAddExists(add Address, username string) bool {
 
 // Get Name
 func GetName(username string) string {
-	var name string
 	for i := 0; i < len(Users); i++ {
 		if Users[i].Username == username {
-			name = Users[i].Name
+			return Users[i].Name
 		}
 	}
-	return name
+	return ""
 }

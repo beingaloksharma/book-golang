@@ -12,9 +12,11 @@ import (
 // Decalre constant
 const (
 	ERROR400                   = "err-400" // Bad Request
+	ERROR401                   = "err-401" // Unauthorized
 	ERROR500                   = "err-500" // Internal Server Error
 	WRONGREQUESTBODY           = "Invalid Request Body"
 	REQUIREDREQUESTBODYMISSING = "Required Request Body Missing"
+	UNAUTHORIZED               = "Access is Unauthorized" // Unauthorized
 )
 
 // success dto
@@ -38,13 +40,19 @@ func main() {
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
 		log.Info().Msgf("endpoint %v %v %v %v\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
+	r.GET("/users", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"users": Users,
+		})
+	})
+	r.POST("/signup", CreateUser)
+	r.POST("/signin", LoginUser)
+	r.Use(JwtAuthMiddleware())
 	user := r.Group("/user")
 	{
-		user.POST("/signup", CreateUser)
-		user.POST("/signin", LoginUser)
+		user.POST("/user/address", UserAdd)
+		user.GET("/user/profile/:username", GetProfile)
 	}
-	r.POST("/user/address", UserAdd)
-	r.GET("/user/profile/:username", GetProfile)
 	//Register endpoint
 	book := r.Group("/book")
 	{
@@ -58,7 +66,7 @@ func main() {
 	cart := r.Group("/cart")
 	{
 		cart.POST("", AddToCart)
-		cart.GET("/viewcart", ViewCart)
+		cart.GET("", ViewCart)
 	}
 	//Book Server
 	s := &http.Server{
@@ -69,7 +77,9 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 	// Start Server To Listen
-	s.ListenAndServe()
+	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal().Err(err).Msg("Server failed to start")
+	}
 }
 
 // BindJson Structure
@@ -83,7 +93,7 @@ func Bindjson(c *gin.Context, data any) bool {
 			ErrorMessage: WRONGREQUESTBODY,
 		})
 		//Print Log
-		log.Error().Msgf(WRONGREQUESTBODY + " :: " + err.Error())
+		log.Error().Msgf("%s :: %s ", WRONGREQUESTBODY, err.Error())
 		return true
 	}
 	return false
@@ -101,8 +111,24 @@ func ValidateJson(c *gin.Context, data any) bool {
 			ErrorMessage: REQUIREDREQUESTBODYMISSING,
 		})
 		//Print Log
-		log.Error().Msgf(REQUIREDREQUESTBODYMISSING + " :: " + err.Error())
+		log.Error().Msgf("%s :: %s ", REQUIREDREQUESTBODYMISSING, err.Error())
 		return true
 	}
 	return false
+}
+
+func JwtAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		err := TokenValid(c)
+		if err != nil {
+			log.Error().Msgf("User  %s ", UNAUTHORIZED)
+			c.JSON(http.StatusUnauthorized, ErrorDTO{
+				ErrorCode:    ERROR401,
+				ErrorMessage: UNAUTHORIZED,
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
 }

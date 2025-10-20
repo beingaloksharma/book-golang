@@ -8,13 +8,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Cart Data
-var CartData []CheckOut
+// Database
+var CartData = map[string][]CheckOut{}
+var carts = make(map[string][]CartItem)
 
-// Cart Items
-var carts []CartItem
-
-// CartItem represents a book added to the user's shopping cart.
+// Cart Item
 type AddItem struct {
 	BookID string `json:"book_id"`
 }
@@ -28,81 +26,98 @@ type CartItem struct {
 
 // Checkout
 type CheckOut struct {
-	Cart  []CartItem `json:"cart"`
-	Total float64    `json:"total"`
+	Username string     `json:"-"`
+	Cart     []CartItem `json:"cart"`
+	Total    float64    `json:"total"`
 }
 
-// Cart
+// Add to Cart handler
 func AddToCart(c *gin.Context) {
-	//Declare DTO for Book
+	activeUsername := c.GetString("username")
 	var item AddItem
-	//BindJSON
-	jsonRes := Bindjson(c, &item)
-	if jsonRes {
+
+	if err := c.BindJSON(&item); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
 		return
 	}
-	//Validate JSON
-	jsonValid := ValidateJson(c, &item)
-	if jsonValid {
-		return
-	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, item)
-	//Check Already Exists Book Record
-	if !isBookExists(item.BookID, "") {
-		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
-			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
-			ErrorMessage: fmt.Sprintf("Book having book ID - %s and Title - %s doesn't exists", item.BookID, findBookTitle(item.BookID)),
+
+	log.Info().Msgf("Username :: %s :: Request URL :: %s --- Method :: %s --- Request Body :: %+v", activeUsername, c.Request.URL, c.Request.Method, item)
+
+	if !isBookExists(item.BookID, "", activeUsername) {
+		bookTitle := findBookTitle(item.BookID, activeUsername)
+		c.JSON(http.StatusConflict, gin.H{
+			"error_code":    fmt.Sprintf("%d", http.StatusConflict),
+			"error_message": fmt.Sprintf("Book having book ID - %s and Title - %s doesn't exist", item.BookID, bookTitle),
 		})
+		log.Warn().Msgf("Requested Book ID - %s and Title - %s does not exist", item.BookID, bookTitle)
 		return
 	}
-	CheckCartItem(item)
-	log.Info().Msgf("Cart Item :: %+v", carts)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
-		SuccessMessage: "Book Added in Your Cart",
-		CustomMessage:  carts,
+
+	CheckCartItem(c, item)
+
+	log.Info().Msgf("Cart Items: %+v", carts[activeUsername])
+
+	c.JSON(http.StatusOK, gin.H{
+		"success_code":    fmt.Sprintf("%d", http.StatusOK),
+		"success_message": "Book added to your cart",
+		"cart":            carts[activeUsername],
 	})
 }
 
-func CheckCartItem(item AddItem) {
-	var cart CartItem
-	bookDetails := GetBookById(item.BookID)
-	cart.BookID = bookDetails.ID
-	cart.Quantity = 1
-	cart.Price = bookDetails.Price
-	if len(carts) == 0 {
-		carts = append(carts, cart)
-	} else {
-		for i := 0; i < len(carts); i++ {
-			if carts[i].BookID == item.BookID {
-				carts[i].Quantity = carts[i].Quantity + 1
-				return
-			}
+// Add or update cart item
+func CheckCartItem(c *gin.Context, item AddItem) {
+	activeUsername := c.GetString("username")
+	bookDetails := GetBookById(item.BookID, activeUsername)
+
+	userCart := carts[activeUsername]
+	for i := range userCart {
+		if userCart[i].BookID == item.BookID {
+			userCart[i].Quantity++
+			carts[activeUsername] = userCart
+			return
 		}
-		carts = append(carts, cart)
 	}
+
+	// Item not found, append new item
+	newCartItem := CartItem{
+		BookID:   bookDetails.ID,
+		Quantity: 1,
+		Price:    bookDetails.Price,
+	}
+	carts[activeUsername] = append(userCart, newCartItem)
 }
 
-// View Cart
+// View Cart handler
 func ViewCart(c *gin.Context) {
-	//Store Total checkout value
+	activeUsername := c.GetString("username")
+	userCart := carts[activeUsername]
+
 	var total float64
-	//Calculate Total Price
-	for i := 0; i < len(carts); i++ {
-		total = total + (float64(carts[i].Quantity) * carts[i].Price)
+	for _, item := range userCart {
+		total += float64(item.Quantity) * item.Price
 	}
-	//Print Incoming Request
-	log.Info().Msgf("Request URL :: %s --- Request Method :: %s ", c.Request.URL, c.Request.Method)
-	//Response
-	c.JSON(http.StatusOK, SuccessDTO{
-		SuccessCode: fmt.Sprintf("%d", http.StatusOK),
-		Total:       len(carts),
-		CustomMessage: CheckOut{
-			Cart:  carts,
-			Total: total,
-		},
+
+	log.Info().Msgf("Request URL :: %s --- Method :: %s", c.Request.URL, c.Request.Method)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success_code": fmt.Sprintf("%d", http.StatusOK),
+		"total_items":  len(userCart),
+		"total_price":  total,
+		"cart":         userCart,
 	})
+}
+
+// Get cart checkout details by username
+func GetCartDetailsByUserName(username string) CheckOut {
+	userCart := carts[username]
+	var total float64
+	for _, item := range userCart {
+		total += float64(item.Quantity) * item.Price
+	}
+	//Return
+	return CheckOut{
+		Username: username,
+		Cart:     userCart,
+		Total:    total,
+	}
 }
