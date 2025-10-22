@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // Decalre constant
@@ -34,27 +36,40 @@ type ErrorDTO struct {
 	ErrorMessage string `json:"error_message"`
 }
 
-// Main
+// @title          Book API
+// @version         1.0
+// @description     This is a sample server celler server.
+// @host      localhost:8080
+// @BasePath
+// @securityDefinitions.basic  BasicAuth
 func main() {
 	//Initialization of gin-gonic
 	r := gin.Default()
+	//Log
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
 		log.Info().Msgf("endpoint %v %v %v %v\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
+	// use ginSwagger middleware to serve the API docs
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	//Get Users Details
 	r.GET("/users", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"users": Users,
 		})
 	})
+	//Signup
 	r.POST("/signup", CreateUser)
+	//Signin
 	r.POST("/signin", LoginUser)
+	//Middleware
 	r.Use(JwtAuthMiddleware())
+	//Users
 	user := r.Group("/user")
 	{
 		user.POST("/user/address", UserAdd)
 		user.GET("/user/profile/:username", GetProfile)
 	}
-	//Register endpoint
+	//Book
 	book := r.Group("/book")
 	{
 		book.POST("", CreateBook)
@@ -64,11 +79,13 @@ func main() {
 		book.PATCH("/:id", PatchBook)
 		book.PUT("/:id", PutBook)
 	}
+	//Cart
 	cart := r.Group("/cart")
 	{
 		cart.POST("", AddToCart)
 		cart.GET("", ViewCart)
 	}
+	//Order
 	order := r.Group("/order")
 	{
 		order.POST("", OrderDetails)
