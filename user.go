@@ -39,6 +39,7 @@ type ResponseUserProfile struct {
 	Address  []RequestUserAddressToAdd `json:"address"`
 	Books    []ModelBook               `json:"books"`
 	Cart     []CheckOut                `json:"cart"`
+	Orders   []Orders                  `json:"orders"`
 }
 
 // Save a new record
@@ -198,6 +199,7 @@ func GetProfile(c *gin.Context) {
 			Address:  UserAddress[activeUsername],
 			Books:    BooksData[activeUsername],
 			Cart:     CartData[activeUsername],
+			Orders:   OrderData[activeUsername],
 		},
 	})
 }
