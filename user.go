@@ -36,13 +36,22 @@ type RequestUserAddressToAdd struct {
 type ResponseUserProfile struct {
 	Name     string                    `json:"name"`
 	Username string                    `json:"username"`
-	Address  []RequestUserAddressToAdd `json:"address"`
-	Books    []ModelBook               `json:"books"`
-	Cart     []CheckOut                `json:"cart"`
-	Orders   []Orders                  `json:"orders"`
+	Address  []RequestUserAddressToAdd `json:"address,omitempty"`
+	Books    []ModelBook               `json:"books,omitempty"`
+	Cart     []CheckOut                `json:"cart,omitempty"`
+	Orders   []Orders                  `json:"orders,omitempty"`
 }
 
-// Save a new record
+// Create User
+// @Schemes http
+// @Description Create User
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param			request_body	body		ModelUser	true	"Request Body"
+// @Success 200 {object} SuccessDTO
+// @Failure 409 {object} ErrorDTO
+// @Router /signup [post]
 func CreateUser(c *gin.Context) {
 	//Request User Data
 	var user ModelUser
@@ -60,13 +69,11 @@ func CreateUser(c *gin.Context) {
 	log.Info().Msgf("Request URL :: %s --- Request Method :: %s  --- Request Body :: %+v", c.Request.URL, c.Request.Method, user)
 	//Check Already Exists Book Record
 	if isUserExists(user.Username) {
-		//Response
 		c.JSON(http.StatusConflict, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
-			ErrorMessage: fmt.Sprintf("Username - %s does not have an account", user.Username),
+			ErrorMessage: fmt.Sprintf("Username - %s already exists", user.Username),
 		})
-		//Print Incoming Request
-		log.Warn().Msgf("Username - %s does not have an account", user.Username)
+		log.Warn().Msgf("Username - %s already exists", user.Username)
 		return
 	}
 	// Save user in table
@@ -83,6 +90,16 @@ func CreateUser(c *gin.Context) {
 }
 
 // Login User
+// @Schemes http
+// @Description Login User
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param			request_body	body		RequestLogin	true	"Request Body"
+// @Success 200 {object} SuccessDTO
+// @Failure 401 {object} ErrorDTO
+// @Failure 404 {object} ErrorDTO
+// @Router /signin [post]
 func LoginUser(c *gin.Context) {
 	//Request for User Login
 	var user RequestLogin
@@ -113,7 +130,14 @@ func LoginUser(c *gin.Context) {
 	for i := 0; i < len(Users); i++ {
 		if Users[i].Username == user.Username && Users[i].Password == user.Password {
 			//Generate Token
-			token, _ := GenerateToken(user.Username)
+			token, err := GenerateToken(user.Username)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorDTO{
+					ErrorCode:    fmt.Sprintf("%d", http.StatusInternalServerError),
+					ErrorMessage: "Failed to generate token",
+				})
+				return
+			}
 			log.Info().Msgf("Login SuccessFully for Username - %s and Password - %s", user.Username, strings.Repeat("*", len(user.Password)))
 			c.JSON(http.StatusOK, SuccessDTO{
 				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
@@ -130,6 +154,16 @@ func LoginUser(c *gin.Context) {
 }
 
 // Add User Address
+// @Schemes
+// @Description Add User Address
+// @Tags User
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param	request_body	body RequestUserAddressToAdd	true	"Request Body"
+// @Success 200 {object} SuccessDTO
+// @Failure 409 {object} ErrorDTO
+// @Router /user/address [post]
 func UserAdd(c *gin.Context) {
 	//To Store Active Username
 	activeUsername := c.GetString("username")
@@ -150,7 +184,7 @@ func UserAdd(c *gin.Context) {
 	// Address
 	if isAddExists(add, activeUsername) {
 		//Response
-		c.JSON(http.StatusOK, ErrorDTO{
+		c.JSON(http.StatusConflict, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusConflict),
 			ErrorMessage: fmt.Sprintf("Address - %s already exists", add.Add),
 		})
@@ -173,6 +207,17 @@ func UserAdd(c *gin.Context) {
 	})
 }
 
+// Get User Profile By Username
+// @Schemes
+// @Description Get User Profile By Username
+// @Tags User
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param username	path	string	true "username"
+// @Success 200 {object} SuccessDTO "Success"
+// @Failure 404 {object} ErrorDTO "Error"
+// @Router /user/profile/{username} [get]
 func GetProfile(c *gin.Context) {
 	//Username
 	activeUsername := c.Params.ByName("username")

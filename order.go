@@ -26,6 +26,15 @@ type Orders struct {
 }
 
 // Create new order
+// @Schemes http
+// @Description Place an Order
+// @Tags Order
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} SuccessDTO
+// @Failure 400 {object} ErrorDTO
+// @Router /order [post]
 func OrderDetails(c *gin.Context) {
 	activeUsername := c.GetString("username")
 	log.Info().Msgf("Username - %s :: Requested URL - %s :: Method - %s", activeUsername, c.Request.URL, c.Request.Method)
@@ -76,6 +85,13 @@ func OrderDetails(c *gin.Context) {
 }
 
 // Get all orders for user
+// @Schemes http
+// @Description Get all Orders for User
+// @Tags Order
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} SuccessDTO
+// @Router /order [get]
 func GetOrders(c *gin.Context) {
 	activeUsername := c.GetString("username")
 	log.Info().Msgf("Username - %s :: Requested Orders", activeUsername)
@@ -89,6 +105,15 @@ func GetOrders(c *gin.Context) {
 }
 
 // Get specific order by ID
+// @Schemes http
+// @Description Get Order by ID
+// @Tags Order
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Order ID"
+// @Success 200 {object} SuccessDTO
+// @Failure 404 {object} ErrorDTO
+// @Router /order/{id} [get]
 func GetOrderByID(c *gin.Context) {
 	activeUsername := c.GetString("username")
 	orderID := c.Params.ByName("id")

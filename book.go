@@ -33,6 +33,16 @@ type PatchBookDTO struct {
 }
 
 // Save a new record
+// @Schemes http
+// @Description Create a new Book record
+// @Tags Book
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request_body body ModelBook true "Book Data"
+// @Success 200 {object} SuccessDTO
+// @Failure 409 {object} ErrorDTO
+// @Router /book [post]
 func CreateBook(c *gin.Context) {
 	//To Store Active Username
 	activeUsername := c.GetString("username")
@@ -78,6 +88,13 @@ func CreateBook(c *gin.Context) {
 }
 
 // Get All Books
+// @Schemes http
+// @Description Get All Books for User
+// @Tags Book
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} SuccessDTO
+// @Router /book/books [get]
 func GetBooks(c *gin.Context) {
 	//To Store Active Username
 	activeUsername := c.GetString("username")
@@ -92,6 +109,15 @@ func GetBooks(c *gin.Context) {
 }
 
 // Get Book By Id
+// @Schemes http
+// @Description Get Book By ID
+// @Tags Book
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Book ID"
+// @Success 200 {object} SuccessDTO
+// @Failure 404 {object} ErrorDTO
+// @Router /book/{id} [get]
 func GetBook(c *gin.Context) {
 	//To Store Active Username
 	activeUsername := c.GetString("username")
@@ -135,6 +161,18 @@ func GetBook(c *gin.Context) {
 }
 
 // Put Book By Id
+// @Schemes http
+// @Description Partially update a Book by ID
+// @Tags Book
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Book ID"
+// @Param request_body body PatchBookDTO true "Book Patch Data"
+// @Success 200 {object} SuccessDTO
+// @Failure 400 {object} ErrorDTO
+// @Failure 404 {object} ErrorDTO
+// @Router /book/{id} [patch]
 func PatchBook(c *gin.Context) {
 	activeUsername := c.GetString("username")
 	id := c.Params.ByName("id")
@@ -191,6 +229,18 @@ func PatchBook(c *gin.Context) {
 	})
 }
 
+// @Schemes http
+// @Description Fully update a Book by ID
+// @Tags Book
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Book ID"
+// @Param request_body body ModelBook true "Book Data"
+// @Success 200 {object} SuccessDTO
+// @Failure 400 {object} ErrorDTO
+// @Failure 404 {object} ErrorDTO
+// @Router /book/{id} [put]
 func PutBook(c *gin.Context) {
 	activeUsername := c.GetString("username")
 	id := c.Params.ByName("id")
@@ -246,6 +296,15 @@ func PutBook(c *gin.Context) {
 }
 
 // Delete Book By Id
+// @Schemes http
+// @Description Delete a Book by ID
+// @Tags Book
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Book ID"
+// @Success 200 {object} SuccessDTO
+// @Failure 404 {object} ErrorDTO
+// @Router /book/{id} [delete]
 func DeleteBook(c *gin.Context) {
 	activeUsername := c.GetString("username")
 	id := c.Params.ByName("id")

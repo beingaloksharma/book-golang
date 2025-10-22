@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	docs "github.com/beingaloksharma/book-golang/docs"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
@@ -38,59 +39,72 @@ type ErrorDTO struct {
 
 // @title          Book API
 // @version         1.0
-// @description     This is a sample server celler server.
-// @host      localhost:8080
-// @BasePath
-// @securityDefinitions.basic  BasicAuth
+// @description     BookStore is a lightweight bookstore web API built with Golang (Gin-Gonic).
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @schema bearer
+// @bearerFormat JWT
 func main() {
 	//Initialization of gin-gonic
 	r := gin.Default()
-	//Log
+	//Terminal Log
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
 		log.Info().Msgf("endpoint %v %v %v %v\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
-	// use ginSwagger middleware to serve the API docs
+	//Swagger Configuration
+	docs.SwaggerInfo.BasePath = "/api/v1/"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	//Get Users Details
-	r.GET("/users", func(c *gin.Context) {
+	// @Schemes http
+	// @Description Get all users
+	// @Tags User
+	// @Produce json
+	// @Success 200 {object} map[string][]ModelUser
+	// @Router /api/v1/users [get]
+	r.GET("api/v1/users", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"users": Users,
 		})
 	})
 	//Signup
-	r.POST("/signup", CreateUser)
+	r.POST("api/v1/signup", CreateUser)
 	//Signin
-	r.POST("/signin", LoginUser)
+	r.POST("api/v1/signin", LoginUser)
 	//Middleware
 	r.Use(JwtAuthMiddleware())
 	//Users
-	user := r.Group("/user")
+	api := r.Group("api/v1")
 	{
-		user.POST("/user/address", UserAdd)
-		user.GET("/user/profile/:username", GetProfile)
-	}
-	//Book
-	book := r.Group("/book")
-	{
-		book.POST("", CreateBook)
-		book.GET("/books", GetBooks)
-		book.GET("/:id", GetBook)
-		book.DELETE("/:id", DeleteBook)
-		book.PATCH("/:id", PatchBook)
-		book.PUT("/:id", PutBook)
-	}
-	//Cart
-	cart := r.Group("/cart")
-	{
-		cart.POST("", AddToCart)
-		cart.GET("", ViewCart)
-	}
-	//Order
-	order := r.Group("/order")
-	{
-		order.POST("", OrderDetails)
-		order.GET("", GetOrders)
-		order.GET("/:id", GetOrderByID)
+		//User
+		user := api.Group("/user")
+		{
+			user.POST("/address", UserAdd)
+			user.GET("/profile/:username", GetProfile)
+		}
+		//Book
+		book := api.Group("/book")
+		{
+			book.POST("", CreateBook)
+			book.GET("/books", GetBooks)
+			book.GET("/:id", GetBook)
+			book.DELETE("/:id", DeleteBook)
+			book.PATCH("/:id", PatchBook)
+			book.PUT("/:id", PutBook)
+		}
+		//Cart
+		cart := api.Group("/cart")
+		{
+			cart.POST("", AddToCart)
+			cart.GET("", ViewCart)
+		}
+		//Order
+		order := api.Group("/order")
+		{
+			order.POST("", OrderDetails)
+			order.GET("", GetOrders)
+			order.GET("/:id", GetOrderByID)
+		}
 	}
 
 	//Book Server

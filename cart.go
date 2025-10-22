@@ -32,6 +32,16 @@ type CheckOut struct {
 }
 
 // Add to Cart handler
+// @Schemes http
+// @Description Add Book to Cart
+// @Tags Cart
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request_body body AddItem true "Book to add to Cart"
+// @Success 200 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Router /cart [post]
 func AddToCart(c *gin.Context) {
 	activeUsername := c.GetString("username")
 	var item AddItem
@@ -88,21 +98,35 @@ func CheckCartItem(c *gin.Context, item AddItem) {
 }
 
 // View Cart handler
+// @Schemes http
+// @Description View Cart Items
+// @Tags Cart
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /cart [get]
 func ViewCart(c *gin.Context) {
 	activeUsername := c.GetString("username")
 	userCart := carts[activeUsername]
 
-	var total float64
+	//Total Price
+	var totalPrice float64
 	for _, item := range userCart {
-		total += float64(item.Quantity) * item.Price
+		totalPrice += float64(item.Quantity) * item.Price
+	}
+
+	//Total Quantity
+	var totalQUnatity int
+	for _, item := range userCart {
+		totalQUnatity += item.Quantity
 	}
 
 	log.Info().Msgf("Request URL :: %s --- Method :: %s", c.Request.URL, c.Request.Method)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success_code": fmt.Sprintf("%d", http.StatusOK),
-		"total_items":  len(userCart),
-		"total_price":  total,
+		"total_items":  totalQUnatity,
+		"total_price":  totalPrice,
 		"cart":         userCart,
 	})
 }

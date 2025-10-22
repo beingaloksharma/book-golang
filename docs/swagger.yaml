@@ -1,0 +1,468 @@
+definitions:
+  main.AddItem:
+    properties:
+      book_id:
+        type: string
+    type: object
+  main.ErrorDTO:
+    properties:
+      error_code:
+        type: string
+      error_message:
+        type: string
+    type: object
+  main.ModelBook:
+    properties:
+      author:
+        type: string
+      id:
+        type: string
+      isbn:
+        type: string
+      language:
+        type: string
+      pages:
+        type: integer
+      price:
+        type: number
+      published_at:
+        type: string
+      publisher:
+        type: string
+      title:
+        type: string
+    required:
+    - author
+    - id
+    - isbn
+    - language
+    - pages
+    - price
+    - published_at
+    - publisher
+    - title
+    type: object
+  main.ModelUser:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  main.PatchBookDTO:
+    properties:
+      id:
+        type: string
+      language:
+        type: string
+      pages:
+        type: integer
+      price:
+        type: number
+    required:
+    - id
+    - language
+    - pages
+    - price
+    type: object
+  main.RequestLogin:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  main.RequestUserAddressToAdd:
+    properties:
+      address:
+        type: string
+    type: object
+  main.SuccessDTO:
+    properties:
+      response: {}
+      status_code:
+        type: string
+      status_message:
+        type: string
+      total:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: BookStore is a lightweight bookstore web API built with Golang (Gin-Gonic).
+  title: Book API
+  version: "1.0"
+paths:
+  /book:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Book record
+      parameters:
+      - description: Book Data
+        in: body
+        name: request_body
+        required: true
+        schema:
+          $ref: '#/definitions/main.ModelBook'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Book
+  /book/{id}:
+    delete:
+      description: Delete a Book by ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Book
+    get:
+      description: Get Book By ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Book
+    patch:
+      consumes:
+      - application/json
+      description: Partially update a Book by ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Book Patch Data
+        in: body
+        name: request_body
+        required: true
+        schema:
+          $ref: '#/definitions/main.PatchBookDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Book
+    put:
+      consumes:
+      - application/json
+      description: Fully update a Book by ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Book Data
+        in: body
+        name: request_body
+        required: true
+        schema:
+          $ref: '#/definitions/main.ModelBook'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Book
+  /book/books:
+    get:
+      description: Get All Books for User
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Book
+  /cart:
+    get:
+      description: View Cart Items
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      tags:
+      - Cart
+    post:
+      consumes:
+      - application/json
+      description: Add Book to Cart
+      parameters:
+      - description: Book to add to Cart
+        in: body
+        name: request_body
+        required: true
+        schema:
+          $ref: '#/definitions/main.AddItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      tags:
+      - Cart
+  /order:
+    get:
+      description: Get all Orders for User
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Order
+    post:
+      consumes:
+      - application/json
+      description: Place an Order
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Order
+  /order/{id}:
+    get:
+      description: Get Order by ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Order
+  /signin:
+    post:
+      consumes:
+      - application/json
+      description: Login User
+      parameters:
+      - description: Request Body
+        in: body
+        name: request_body
+        required: true
+        schema:
+          $ref: '#/definitions/main.RequestLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      tags:
+      - User
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Create User
+      parameters:
+      - description: Request Body
+        in: body
+        name: request_body
+        required: true
+        schema:
+          $ref: '#/definitions/main.ModelUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      tags:
+      - User
+  /user/address:
+    post:
+      consumes:
+      - application/json
+      description: Add User Address
+      parameters:
+      - description: Request Body
+        in: body
+        name: request_body
+        required: true
+        schema:
+          $ref: '#/definitions/main.RequestUserAddressToAdd'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - User
+  /user/profile/{username}:
+    get:
+      consumes:
+      - application/json
+      description: Get User Profile By Username
+      parameters:
+      - description: username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "404":
+          description: Error
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - User
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
