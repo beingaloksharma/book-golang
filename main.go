@@ -17,6 +17,7 @@ const (
 	WRONGREQUESTBODY           = "Invalid Request Body"
 	REQUIREDREQUESTBODYMISSING = "Required Request Body Missing"
 	UNAUTHORIZED               = "Access is Unauthorized" // Unauthorized
+	ORDERPREFIX                = "BOOKOD"
 )
 
 // success dto
@@ -68,6 +69,13 @@ func main() {
 		cart.POST("", AddToCart)
 		cart.GET("", ViewCart)
 	}
+	order := r.Group("/order")
+	{
+		order.POST("", OrderDetails)
+		order.GET("", GetOrders)
+		order.GET("/:id", GetOrderByID)
+	}
+
 	//Book Server
 	s := &http.Server{
 		Addr:           ":8080",
