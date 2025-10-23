@@ -201,6 +201,26 @@ func generateOrderFile(username string, order Orders) error {
 			item.BookID, item.Quantity, item.Price)
 	}
 	content += fmt.Sprintf("\nTotal Amount: ₹%.2f\n", order.Total)
+
+	// Append status info
+	content += fmt.Sprintf("\nOrder Status: %s\n", order.Status.Type)
+	if order.Status.Reason != "" {
+		content += fmt.Sprintf("Status Reason: %s\n", order.Status.Reason)
+	}
+	if order.Status.TrackingNumber != "" {
+		content += fmt.Sprintf("Tracking Number: %s\n", order.Status.TrackingNumber)
+	}
+	if order.Status.ShippingCarrier != "" {
+		content += fmt.Sprintf("Shipping Carrier: %s\n", order.Status.ShippingCarrier)
+	}
+
+	// Append payment details
+	content += fmt.Sprintf("\nPayment Details:\n")
+	content += fmt.Sprintf("Paid: %t\n", order.Payment.Paid)
+	content += fmt.Sprintf("Method: %s\n", order.Payment.Method)
+	content += fmt.Sprintf("Paid On: %s\n", order.Payment.PaidOn)
+	content += fmt.Sprintf("Reference: %s\n", order.Payment.Reference)
+
 	content += fmt.Sprintf("\nGenerated On: %s\n", time.Now().Format("2006-01-02 15:04:05"))
 
 	// Write to file
@@ -240,6 +260,13 @@ func UpdateOrderStatus(c *gin.Context) {
 		if orders[i].OrderID == orderID {
 			orders[i].Status = newStatus
 			OrderData[activeUsername][i] = orders[i]
+
+			// Update order summary file
+			err := generateOrderFile(activeUsername, orders[i])
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to update order summary file after status update")
+			}
+
 			c.JSON(http.StatusOK, SuccessDTO{
 				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
 				SuccessMessage: "Order status updated successfully",
@@ -281,6 +308,13 @@ func UpdateOrderPayment(c *gin.Context) {
 		if orders[i].OrderID == orderID {
 			orders[i].Payment = newPayment
 			OrderData[activeUsername][i] = orders[i]
+
+			// Update order summary file
+			err := generateOrderFile(activeUsername, orders[i])
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to update order summary file after payment update")
+			}
+
 			c.JSON(http.StatusOK, SuccessDTO{
 				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
 				SuccessMessage: "Order payment updated successfully",

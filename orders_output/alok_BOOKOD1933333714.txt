@@ -1,0 +1,25 @@
+Order Summary
+==============
+Username: alok
+Name: Alok Kumar Sharma
+Order ID: BOOKOD1933333714
+Order Date: 2025-10-23 20:49:41
+Delivery Address: address
+
+Items Ordered:
+- BookID: GO1011121314 | Quantity: 1 | Price: 250.00
+
+Total Amount: ₹250.00
+
+Order Status: delivered
+Status Reason: Payment Done
+Tracking Number: 9087654321
+Shipping Carrier: Air
+
+Payment Details:
+Paid: true
+Method: UPI
+Paid On: today
+Reference: UPIGO1011121314
+
+Generated On: 2025-10-23 20:53:10

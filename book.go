@@ -132,7 +132,7 @@ func GetBook(c *gin.Context) {
 		//Response
 		c.JSON(http.StatusOK, ErrorDTO{
 			ErrorCode:    fmt.Sprintf("%d", http.StatusNotFound),
-			ErrorMessage: fmt.Sprintf("Book having book ID - %s  don't exists", book.ID),
+			ErrorMessage: fmt.Sprintf("Book having book ID - %s  don't exists", id),
 		})
 		// Print Log
 		log.Warn().Msgf("Book having book ID - %s don't exists", id)
