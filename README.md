@@ -123,142 +123,69 @@ curl -X 'GET' \
 
 ## Operations on Book
 
-# POST - /book/create
+# Add a new book
 
-Request
-```json
-{
-    "id": "1",
-    "title": "Go Lang",
-    "author": "Google",
-    "publisher": "Google",
-    "published_at": "2015-10-26",
-    "isbn": "978-0134190440",
-    "pages": 400,
-    "language": "English",
-    "price": 50
-}
+<b>URL</b> - http://localhost:8080/api/v1/book   
+<b>CURL</b>    
+```cmd  
+curl -X 'POST' \
+  'http://localhost:8080/api/v1/book' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "author": "Go Programmers",
+  "id": "GO1011121314",
+  "isbn": "1234509876",
+  "language": "English",
+  "pages": 500,
+  "price": 250,
+  "published_at": "October 23, 2025",
+  "publisher": "Basics of Golang",
+  "title": "Unknown Publisher"
+}'
 ```
 
-Response
+<b> Request Body </b>
 ```json
 {
-    "status_code": "200",
-    "status_message": "Book Record Created",
-    "books": [
-        {
-            "id": "1",
-            "title": "Go Lang",
-            "author": "Google",
-            "publisher": "Google",
-            "published_at": "2015-10-26",
-            "isbn": "978-0134190440",
-            "pages": 400,
-            "language": "English",
-            "price": 50
-        }
-    ]
-}
-```
-
-# GET - /book/book/:id
-
-Request :: /book/book/1
-
-Response
-```json
-{
-    "status_code": "200",
-    "books": {
-        "id": "1",
-        "title": "Go Lang",
-        "author": "Google",
-        "publisher": "Google",
-        "published_at": "2015-10-26",
-        "isbn": "978-0134190440",
-        "pages": 500,
-        "language": "Hindi",
-        "price": 500
+  "status_code": "200",
+  "status_message": "Book Record Created",
+  "response": [
+    {
+      "id": "GO1011121314",
+      "title": "Unknown Publisher",
+      "author": "Go Programmers",
+      "publisher": "Basics of Golang",
+      "published_at": "October 23, 2025",
+      "isbn": "1234509876",
+      "pages": 500,
+      "language": "English",
+      "price": 250
     }
+  ]
 }
 ```
 
-# GET - /book/books
-
-Request :: /book/books
-
-Response
+<b> Response </b>
 ```json
 {
-    "status_code": "200",
-    "total": 2,
-    "books": [
-        {
-            "id": "1",
-            "title": "Go Lang",
-            "author": "Google",
-            "publisher": "Google",
-            "published_at": "2015-10-26",
-            "isbn": "978-0134190440",
-            "pages": 500,
-            "language": "Hindi",
-            "price": 500
-        },
-        {
-            "id": "2",
-            "title": "Java Programming",
-            "author": "",
-            "publisher": "",
-            "published_at": "2015-10-26",
-            "isbn": "978-0134190440",
-            "pages": 400,
-            "language": "English",
-            "price": 50
-        }
-    ]
-}
-```
-
-#  DELETE - /book/book/:id
-
-Request :: /book/book/2
-
-
-Response
-```json
-{
-    "status_code": "200",
-    "status_message": "Book having book ID - 2 and Title - Java Programming is deleted"
-}
-```
-
-# PATCH - /book/book
-
-Request 
-```json
-{
-    "id": "1",
-    "pages": 500,
-    "language": "Hindi",
-    "price": 500
-}
-```
-
-Response
-```json
-{
-    "status_code": "200",
-    "status_message": "Book Id 1 record has been updated successfully",
-    "books": {
-        "id": "1",
-        "title": "Go Lang",
-        "author": "Google",
-        "publisher": "Google",
-        "published_at": "2015-10-26",
-        "isbn": "978-0134190440",
-        "pages": 500,
-        "language": "Hindi",
-        "price": 500
+  "status_code": "200",
+  "status_message": "Book Record Created",
+  "response": [
+    {
+      "id": "GO1011121314",
+      "title": "Unknown Publisher",
+      "author": "Go Programmers",
+      "publisher": "Basics of Golang",
+      "published_at": "October 23, 2025",
+      "isbn": "1234509876",
+      "pages": 500,
+      "language": "English",
+      "price": 250
     }
+  ]
 }
 ```
+
+
