@@ -188,4 +188,184 @@ curl -X 'POST' \
 }
 ```
 
+# Get Books
+
+<b>URL</b> - http://localhost:8080/api/v1/book/books
+<b>CURL</b>    
+```cmd  
+curl -X 'GET' \
+  'http://localhost:8080/api/v1/book/books' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s'
+```
+
+<b> Response </b>
+```json
+{
+  "status_code": "200",
+  "total": 1,
+  "response": [
+    {
+      "id": "GO1011121314",
+      "title": "Unknown Publisher",
+      "author": "Go Programmers",
+      "publisher": "Basics of Golang",
+      "published_at": "October 23, 2025",
+      "isbn": "1234509876",
+      "pages": 500,
+      "language": "English",
+      "price": 250
+    }
+  ]
+}
+```
+
+# Get Book By Id
+
+<b>URL</b> - http://localhost:8080/api/v1/book/books
+<b>CURL</b>    
+```cmd  
+curl -X 'GET' \
+  'http://localhost:8080/api/v1/book/GO1011121314' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s'
+```
+
+<b> Response </b>
+```json
+{
+  "status_code": "200",
+  "response": {
+    "id": "GO1011121314",
+    "title": "Unknown Publisher",
+    "author": "Go Programmers",
+    "publisher": "Basics of Golang",
+    "published_at": "October 23, 2025",
+    "isbn": "1234509876",
+    "pages": 500,
+    "language": "English",
+    "price": 250
+  }
+}
+```
+
+# Update Book By Id [PUT]
+
+<b>URL</b> - http://localhost:8080/api/v1/book/GO1011121314
+<b>CURL</b>    
+```cmd  
+curl -X 'PUT' \
+  'http://localhost:8080/api/v1/book/GO1011121314' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s' \
+  -H 'Content-Type: application/json' \
+  -d '{
+   "id": "GO1011121314",
+    "title": "Known Publisher",
+    "author": "Go Programmers",
+    "publisher": "Basics of Golang && Concuurency Control",
+    "published_at": "October 23, 2025",
+    "isbn": "1234509876",
+    "pages": 400,
+    "language": "English",
+    "price": 550
+}'
+```
+<b> Request Body </b>
+```json
+{
+   "id": "GO1011121314",
+    "title": "Known Publisher",
+    "author": "Go Programmers",
+    "publisher": "Basics of Golang && Concuurency Control",
+    "published_at": "October 23, 2025",
+    "isbn": "1234509876",
+    "pages": 400,
+    "language": "English",
+    "price": 550
+}
+```
+
+<b> Response </b>
+```json
+{
+  "status_code": "200",
+  "response": {
+    "id": "GO1011121314",
+    "title": "Unknown Publisher",
+    "author": "Go Programmers",
+    "publisher": "Basics of Golang",
+    "published_at": "October 23, 2025",
+    "isbn": "1234509876",
+    "pages": 500,
+    "language": "English",
+    "price": 250
+  }
+}
+```
+
+# Update Book By Id [PATCH]
+
+<b>URL</b> - http://localhost:8080/api/v1/book/GO1011121314
+<b>CURL</b>    
+```cmd  
+curl -X 'PATCH' \
+  'http://localhost:8080/api/v1/book/GO1011121314' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "id": "GO1011121314",
+  "language": "Hindi",
+  "pages": 1000,
+  "price": 600
+}'
+```
+<b> Request Body </b>
+```json
+{
+  "id": "GO1011121314",
+  "language": "Hindi",
+  "pages": 1000,
+  "price": 600
+}
+```
+
+<b> Response </b>
+```json
+{
+  "status_code": "200",
+  "status_message": "Book ID GO1011121314 record has been updated successfully",
+  "response": {
+    "id": "GO1011121314",
+    "title": "Known Publisher",
+    "author": "Go Programmers",
+    "publisher": "Basics of Golang && Concuurency Control",
+    "published_at": "October 23, 2025",
+    "isbn": "1234509876",
+    "pages": 1000,
+    "language": "Hindi",
+    "price": 600
+  }
+}
+```
+# Delete Book By Id [DELETE]
+
+<b>URL</b> - http://localhost:8080/api/v1/book/GO1011121314
+<b>CURL</b>    
+```cmd  
+curl -X 'DELETE' \
+  'http://localhost:8080/api/v1/book/GO1011121314' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s'
+```
+<b> Response </b>
+```json
+{
+  "status_code": "200",
+  "status_message": "Book with ID GO1011121314 and Title Known Publisher has been deleted"
+}
+```
+
+
 
