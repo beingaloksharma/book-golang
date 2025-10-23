@@ -367,5 +367,67 @@ curl -X 'DELETE' \
 }
 ```
 
+## Operations on Cart
+
+# Add items to cart [POST]
+<b>URL </b> - http://localhost:8080/api/v1/cart
+<b>CURL </b>
+```cmd
+curl -X 'POST' \
+  'http://localhost:8080/api/v1/cart' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "book_id": "GO1011121314"
+}'
+```
+<b> Request Body </b>
+```json
+{
+  "book_id": "GO1011121314"
+}
+```
+
+<b>Response</b>
+```json
+{
+  "cart": [
+    {
+      "book_id": "GO1011121314",
+      "quantity": 1,
+      "price": 250
+    }
+  ],
+  "success_code": "200",
+  "success_message": "Book added to your cart"
+}
+```
+
+# View cart 
+<b>URL </b> - http://localhost:8080/api/v1/cart [GET]
+<b>CURL </b>
+```cmd
+curl -X 'GET' \
+  'http://localhost:8080/api/v1/cart' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s'
+```
+
+<b>Response</b>
+```json
+{
+  "cart": [
+    {
+      "book_id": "GO1011121314",
+      "quantity": 1,
+      "price": 250
+    }
+  ],
+  "success_code": "200",
+  "total_items": 1,
+  "total_price": 250
+}
+```
 
 
