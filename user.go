@@ -15,16 +15,16 @@ var UserAddress = make(map[string][]RequestUserAddressToAdd)
 
 // User Table
 type ModelUser struct {
-	Name     string `json:"name"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Name     string `json:"name" validate:"required"`
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 // DTO - Data Transfer Object
 // Login Request
 type RequestLogin struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 // Request to Add Address
@@ -34,8 +34,8 @@ type RequestUserAddressToAdd struct {
 
 // Request to Get User Profile
 type ResponseUserProfile struct {
-	Name     string                    `json:"name"`
-	Username string                    `json:"username"`
+	Name     string                    `json:"name" validate:"required"`
+	Username string                    `json:"username" validate:"required"`
 	Address  []RequestUserAddressToAdd `json:"address,omitempty"`
 	Books    []ModelBook               `json:"books,omitempty"`
 	Cart     []CheckOut                `json:"cart,omitempty"`

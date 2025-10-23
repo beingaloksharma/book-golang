@@ -17,12 +17,30 @@ var OrderData = make(map[string][]Orders)
 
 // Order Table
 type Orders struct {
-	OrderID   string     `json:"order_id"`
-	Name      string     `json:"name"`
-	Cart      []CartItem `json:"cart"`
-	Address   string     `json:"address"`
-	OrderDate string     `json:"order_date"`
-	Total     float64    `json:"total"`
+	OrderID   string     `json:"order_id" validate:"required"`
+	Name      string     `json:"name" validate:"required"`
+	Cart      []CartItem `json:"cart" validate:"required"`
+	Address   string     `json:"address" validate:"required"`
+	OrderDate string     `json:"order_date" validate:"required"`
+	Total     float64    `json:"total" validate:"required"`
+	Status    Status     `json:"status"`
+	Payment   Payment    `json:"payment,omitempty"`
+}
+
+// Status structure for tracking
+type Status struct {
+	Type            string `json:"type" validate:"required,oneof=pending shipped delivered"`
+	Reason          string `json:"reason,omitempty"`
+	TrackingNumber  string `json:"tracking_number,omitempty"`
+	ShippingCarrier string `json:"shipping_carrier,omitempty"`
+}
+
+// Payment structure for tracking
+type Payment struct {
+	Paid      bool   `json:"paid"`
+	Method    string `json:"method,omitempty" validate:"required,oneof=UPI Card COD"`
+	PaidOn    string `json:"paid_on,omitempty"`
+	Reference string `json:"reference,omitempty"`
 }
 
 // Create new order
@@ -62,6 +80,8 @@ func OrderDetails(c *gin.Context) {
 		Address:   UserAddress[activeUsername][0].Add,
 		OrderDate: time.Now().Format("2006-01-02 15:04:05"),
 		Total:     checkout.Total,
+		Status:    Status{Type: "pending", Reason: "Awaiting payment"},
+		Payment:   Payment{Paid: false, Method: "", PaidOn: "", Reference: ""},
 	}
 
 	// Save in-memory
@@ -191,4 +211,86 @@ func generateOrderFile(username string, order Orders) error {
 
 	log.Info().Msgf("Order summary file generated: %s", filePath)
 	return nil
+}
+
+// Update order status
+// @Schemes http
+// @Description Update Order Status
+// @Tags Order
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Order ID"
+// @Param status body Status true "Status Info"
+// @Success 200 {object} SuccessDTO
+// @Failure 404 {object} ErrorDTO
+// @Router /order/{id}/status [put]
+func UpdateOrderStatus(c *gin.Context) {
+	activeUsername := c.GetString("username")
+	orderID := c.Param("id")
+
+	var newStatus Status
+	if err := c.ShouldBindJSON(&newStatus); err != nil {
+		respondError(c, http.StatusBadRequest, "Invalid status data")
+		return
+	}
+
+	orders := OrderData[activeUsername]
+	for i := range orders {
+		if orders[i].OrderID == orderID {
+			orders[i].Status = newStatus
+			OrderData[activeUsername][i] = orders[i]
+			c.JSON(http.StatusOK, SuccessDTO{
+				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
+				SuccessMessage: "Order status updated successfully",
+				CustomMessage:  orders[i],
+			})
+			log.Info().Msgf("Order status updated for user - %s :: %+v", activeUsername, orders[i])
+			return
+		}
+	}
+
+	respondError(c, http.StatusNotFound, fmt.Sprintf("Order with ID %s not found", orderID))
+	log.Warn().Msgf("Order not found for status update - ID %s, User %s", orderID, activeUsername)
+}
+
+// Update order payment
+// @Schemes http
+// @Description Update Order Payment
+// @Tags Order
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Order ID"
+// @Param payment body Payment true "Payment Info"
+// @Success 200 {object} SuccessDTO
+// @Failure 404 {object} ErrorDTO
+// @Router /order/{id}/payment [put]
+func UpdateOrderPayment(c *gin.Context) {
+	activeUsername := c.GetString("username")
+	orderID := c.Param("id")
+
+	var newPayment Payment
+	if err := c.ShouldBindJSON(&newPayment); err != nil {
+		respondError(c, http.StatusBadRequest, "Invalid payment data")
+		return
+	}
+
+	orders := OrderData[activeUsername]
+	for i := range orders {
+		if orders[i].OrderID == orderID {
+			orders[i].Payment = newPayment
+			OrderData[activeUsername][i] = orders[i]
+			c.JSON(http.StatusOK, SuccessDTO{
+				SuccessCode:    fmt.Sprintf("%d", http.StatusOK),
+				SuccessMessage: "Order payment updated successfully",
+				CustomMessage:  orders[i],
+			})
+			log.Info().Msgf("Order payment updated for user - %s :: %+v", activeUsername, orders[i])
+			return
+		}
+	}
+
+	respondError(c, http.StatusNotFound, fmt.Sprintf("Order with ID %s not found", orderID))
+	log.Warn().Msgf("Order not found for payment update - ID %s, User %s", orderID, activeUsername)
 }

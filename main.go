@@ -104,6 +104,9 @@ func main() {
 			order.POST("", OrderDetails)
 			order.GET("", GetOrders)
 			order.GET("/:id", GetOrderByID)
+			order.PUT("/:id/status", UpdateOrderStatus)
+			order.PUT("/:id/payment", UpdateOrderPayment)
+
 		}
 	}
 

@@ -433,6 +433,108 @@ const docTemplate = `{
                 }
             }
         },
+        "/order/{id}/payment": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update Order Payment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Order"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payment Info",
+                        "name": "payment",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.Payment"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SuccessDTO"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/order/{id}/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update Order Status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Order"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Status Info",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.Status"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SuccessDTO"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.ErrorDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/signin": {
             "post": {
                 "description": "Login User",
@@ -607,6 +709,9 @@ const docTemplate = `{
     "definitions": {
         "main.AddItem": {
             "type": "object",
+            "required": [
+                "book_id"
+            ],
             "properties": {
                 "book_id": {
                     "type": "string"
@@ -669,6 +774,11 @@ const docTemplate = `{
         },
         "main.ModelUser": {
             "type": "object",
+            "required": [
+                "name",
+                "password",
+                "username"
+            ],
             "properties": {
                 "name": {
                     "type": "string"
@@ -704,8 +814,37 @@ const docTemplate = `{
                 }
             }
         },
+        "main.Payment": {
+            "type": "object",
+            "required": [
+                "method"
+            ],
+            "properties": {
+                "method": {
+                    "type": "string",
+                    "enum": [
+                        "UPI",
+                        "Card",
+                        "COD"
+                    ]
+                },
+                "paid": {
+                    "type": "boolean"
+                },
+                "paid_on": {
+                    "type": "string"
+                },
+                "reference": {
+                    "type": "string"
+                }
+            }
+        },
         "main.RequestLogin": {
             "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
             "properties": {
                 "password": {
                     "type": "string"
@@ -720,6 +859,31 @@ const docTemplate = `{
             "properties": {
                 "address": {
                     "type": "string"
+                }
+            }
+        },
+        "main.Status": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                },
+                "shipping_carrier": {
+                    "type": "string"
+                },
+                "tracking_number": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "shipped",
+                        "delivered"
+                    ]
                 }
             }
         },

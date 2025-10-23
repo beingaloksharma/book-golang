@@ -3,6 +3,8 @@ definitions:
     properties:
       book_id:
         type: string
+    required:
+    - book_id
     type: object
   main.ErrorDTO:
     properties:
@@ -50,6 +52,10 @@ definitions:
         type: string
       username:
         type: string
+    required:
+    - name
+    - password
+    - username
     type: object
   main.PatchBookDTO:
     properties:
@@ -67,17 +73,54 @@ definitions:
     - pages
     - price
     type: object
+  main.Payment:
+    properties:
+      method:
+        enum:
+        - UPI
+        - Card
+        - COD
+        type: string
+      paid:
+        type: boolean
+      paid_on:
+        type: string
+      reference:
+        type: string
+    required:
+    - method
+    type: object
   main.RequestLogin:
     properties:
       password:
         type: string
       username:
         type: string
+    required:
+    - password
+    - username
     type: object
   main.RequestUserAddressToAdd:
     properties:
       address:
         type: string
+    type: object
+  main.Status:
+    properties:
+      reason:
+        type: string
+      shipping_carrier:
+        type: string
+      tracking_number:
+        type: string
+      type:
+        enum:
+        - pending
+        - shipped
+        - delivered
+        type: string
+    required:
+    - type
     type: object
   main.SuccessDTO:
     properties:
@@ -338,6 +381,70 @@ paths:
         name: id
         required: true
         type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Order
+  /order/{id}/payment:
+    put:
+      consumes:
+      - application/json
+      description: Update Order Payment
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payment Info
+        in: body
+        name: payment
+        required: true
+        schema:
+          $ref: '#/definitions/main.Payment'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SuccessDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorDTO'
+      security:
+      - BearerAuth: []
+      tags:
+      - Order
+  /order/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update Order Status
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status Info
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/main.Status'
       produces:
       - application/json
       responses:

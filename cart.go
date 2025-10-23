@@ -14,21 +14,21 @@ var carts = make(map[string][]CartItem)
 
 // Cart Item
 type AddItem struct {
-	BookID string `json:"book_id"`
+	BookID string `json:"book_id" validate:"required"`
 }
 
 // Cart
 type CartItem struct {
-	BookID   string  `json:"book_id"`
-	Quantity int     `json:"quantity"`
-	Price    float64 `json:"price"`
+	BookID   string  `json:"book_id" validate:"required"`
+	Quantity int     `json:"quantity" validate:"required"`
+	Price    float64 `json:"price" validate:"required"`
 }
 
 // Checkout
 type CheckOut struct {
-	Username string     `json:"-"`
-	Cart     []CartItem `json:"cart"`
-	Total    float64    `json:"total"`
+	Username string     `json:"-" validate:"required"`
+	Cart     []CartItem `json:"cart" validate:"required"`
+	Total    float64    `json:"total" validate:"required"`
 }
 
 // Add to Cart handler
