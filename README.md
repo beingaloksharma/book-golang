@@ -148,22 +148,16 @@ curl -X 'POST' \
 
 <b> Request Body </b>
 ```json
-{
-  "status_code": "200",
-  "status_message": "Book Record Created",
-  "response": [
-    {
-      "id": "GO1011121314",
-      "title": "Unknown Publisher",
-      "author": "Go Programmers",
-      "publisher": "Basics of Golang",
-      "published_at": "October 23, 2025",
-      "isbn": "1234509876",
-      "pages": 500,
-      "language": "English",
-      "price": 250
-    }
-  ]
+  {
+  "author": "Go Programmers",
+  "id": "GO1011121314",
+  "isbn": "1234509876",
+  "language": "English",
+  "pages": 500,
+  "price": 250,
+  "published_at": "October 23, 2025",
+  "publisher": "Basics of Golang",
+  "title": "Unknown Publisher"
 }
 ```
 
