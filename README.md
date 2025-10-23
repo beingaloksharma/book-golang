@@ -430,4 +430,182 @@ curl -X 'GET' \
 }
 ```
 
+## Operations on Orders
+
+# Order [POST]
+<b>URL </b> - http://localhost:8080/api/v1/order
+<b>CURL </b>
+```cmd
+curl -X 'POST' \
+  'http://localhost:8080/api/v1/order' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzQyOTgsInVzZXJuYW1lIjoiYWRtaW4ifQ.sCgjMRx36z0ayPjjZL4lMrB7WJe346mjx_tynE0TyYE' \
+  -d ''
+```
+
+<b>Response</b>
+```json
+{
+  "status_code": "200",
+  "status_message": "Order placed successfully",
+  "response": {
+    "order_id": "BOOKOD3049905315",
+    "name": "Alok Kumar Sharma",
+    "cart": [
+      {
+        "book_id": "GO1011121314",
+        "quantity": 1,
+        "price": 250
+      }
+    ],
+    "address": "Address",
+    "order_date": "2025-10-23 20:15:16",
+    "total": 250,
+    "status": {
+      "type": "pending",
+      "reason": "Awaiting payment"
+    },
+    "payment": {
+      "paid": false
+    }
+  }
+}
+```
+# Get Order By Id [GET]
+<b>URL </b> - http://localhost:8080/api/v1/order/BOOKOD3049905315
+<b>CURL </b>
+```cmd
+curl -X 'GET' \
+  'http://localhost:8080/api/v1/order/BOOKOD3049905315' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzQyOTgsInVzZXJuYW1lIjoiYWRtaW4ifQ.sCgjMRx36z0ayPjjZL4lMrB7WJe346mjx_tynE0TyYE'
+```
+
+<b>Response</b>
+```json
+{
+  "status_code": "200",
+  "status_message": "Fetched order successfully",
+  "response": {
+    "order_id": "BOOKOD3049905315",
+    "name": "Alok Kumar Sharma",
+    "cart": [
+      {
+        "book_id": "GO1011121314",
+        "quantity": 1,
+        "price": 250
+      }
+    ],
+    "address": "Address",
+    "order_date": "2025-10-23 20:15:16",
+    "total": 250,
+    "status": {
+      "type": "pending",
+      "reason": "Awaiting payment"
+    },
+    "payment": {
+      "paid": false
+    }
+  }
+}
+```
+
+# Update Order Status [GET]
+<b>URL </b> - http://localhost:8080/api/v1/order/BOOKOD3049905315/status
+<b>CURL </b>
+```cmd
+curl -X 'PUT' \
+  'http://localhost:8080/api/v1/order/BOOKOD3049905315/status' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzQyOTgsInVzZXJuYW1lIjoiYWRtaW4ifQ.sCgjMRx36z0ayPjjZL4lMrB7WJe346mjx_tynE0TyYE' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "reason": "Payment Awaiting",
+  "shipping_carrier": "known",
+  "tracking_number": "BOOK0987654321",
+  "type": "Transit"
+}'
+```
+
+<b>Response</b>
+```json
+{
+  "status_code": "200",
+  "status_message": "Order status updated successfully",
+  "response": {
+    "order_id": "BOOKOD3049905315",
+    "name": "Alok Kumar Sharma",
+    "cart": [
+      {
+        "book_id": "GO1011121314",
+        "quantity": 1,
+        "price": 250
+      }
+    ],
+    "address": "Address",
+    "order_date": "2025-10-23 20:15:16",
+    "total": 250,
+    "status": {
+      "type": "Transit",
+      "reason": "Payment Awaiting",
+      "tracking_number": "BOOK0987654321",
+      "shipping_carrier": "known"
+    },
+    "payment": {
+      "paid": false
+    }
+  }
+}
+```
+
+# Update Payment Status [GET]
+<b>URL </b> - http://localhost:8080/api/v1/order/BOOKOD3049905315/payment
+<b>CURL </b>
+```cmd
+curl -X 'PUT' \
+  'http://localhost:8080/api/v1/order/BOOKOD3049905315/payment' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzQyOTgsInVzZXJuYW1lIjoiYWRtaW4ifQ.sCgjMRx36z0ayPjjZL4lMrB7WJe346mjx_tynE0TyYE' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "method": "UPI",
+  "paid": true,
+  "paid_on": "October 31, 2025",
+  "reference": "UPIBOOKOD3049905315"
+}'
+```
+
+<b>Response</b>
+```json
+{
+  "status_code": "200",
+  "status_message": "Order payment updated successfully",
+  "response": {
+    "order_id": "BOOKOD3049905315",
+    "name": "Alok Kumar Sharma",
+    "cart": [
+      {
+        "book_id": "GO1011121314",
+        "quantity": 1,
+        "price": 250
+      }
+    ],
+    "address": "Address",
+    "order_date": "2025-10-23 20:15:16",
+    "total": 250,
+    "status": {
+      "type": "Transit",
+      "reason": "Payment Awaiting",
+      "tracking_number": "BOOK0987654321",
+      "shipping_carrier": "known"
+    },
+    "payment": {
+      "paid": true,
+      "method": "UPI",
+      "paid_on": "October 31, 2025",
+      "reference": "UPIBOOKOD3049905315"
+    }
+  }
+}
+```
 
