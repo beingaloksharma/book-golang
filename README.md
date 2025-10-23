@@ -1,53 +1,127 @@
-# Operations on Book
+## Operations on User
 
-## Data Stored
-
-```go
-var BooksData []BookDTO
+# Signup
+<b>URL </b> - http://localhost:8080/api/v1/signup   
+<b>CURL </b>
+```cmd
+curl -X 'POST' \
+  'http://localhost:8080/api/v1/signup' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "name": "Alok Kumar Sharma",
+  "password": "admin",
+  "username": "admin"
+}'
 ```
-
-## Book DTO
-
-```go
-type BookDTO struct {
-	ID          string  `json:"id"`           // Unique identifier for the book
-	Title       string  `json:"title"`        // Title of the book
-	Author      string  `json:"author"`       // Author's name
-	Publisher   string  `json:"publisher"`    // Publisher's name
-	PublishedAt string  `json:"published_at"` // Publication date (could be string or time.Time)
-	ISBN        string  `json:"isbn"`         // ISBN number
-	Pages       int     `json:"pages"`        // Number of pages
-	Language    string  `json:"language"`     // Language of the book
-	Price       float64 `json:"price"`        // Price of the book
-}
-```
-## Sucess DTO
-```go
-type SuccessDTO struct {
-	SuccessCode    string `json:"status_code"`
-	SuccessMessage string `json:"status_message,omitempty"`
-	Total          int    `json:"total,omitempty"`
-	CustomMessage  any    `json:"books,omitempty"`
+<b> Request Body </b>
+```json
+{
+  "name": "Alok Kumar Sharma",
+  "password": "admin",
+  "username": "admin"
 }
 ```
 
-## Patch DTO
-```go
-type PatchBookDTO struct {
-	ID       string  `json:"id"`       // Unique identifier for the book
-	Pages    int     `json:"pages"`    // Number of pages
-	Language string  `json:"language"` // Language of the book
-	Price    float64 `json:"price"`    // Price of the book
+<b>Response</b>
+```json
+{
+  "status_code": "200",
+  "status_message": "New User Created Successfully",
+  "response": {
+    "password": "*****",
+    "username": "admin"
+  }
 }
 ```
 
-## Error DTO
-```go
-type ErrorDTO struct {
-	ErrorCode    string `json:"error_code"`
-	ErrorMessage string `json:"error_message"`
+# Signin
+<b>URL </b> - http://localhost:8080/api/v1/signin   
+<b>CURL </b>
+```cmd
+curl -X 'POST' \
+  'http://localhost:8080/api/v1/signin' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "password": "admin",
+  "username": "admin"
+}'
+```
+<b> Request Body </b>
+```json
+{
+  "password": "admin",
+  "username": "admin"
 }
 ```
+<b>Response</b>
+```json
+{
+  "status_code": "200",
+  "status_message": "Login SuccessFully for Username - admin",
+  "response": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s"
+}
+```
+# Add a new Address
+<b>URL </b> - http://localhost:8080/api/v1/address   
+<b>CURL </b>
+```cmd
+curl -X 'POST' \
+  'http://localhost:8080/api/v1/user/address' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "address": "Address"
+}'
+```
+<b> Request Body </b>
+```json
+{
+  "address": "Address"
+}
+```
+<b>Response</b>
+```json
+{
+  "status_code": "200",
+  "status_message": "User Address added Successfully",
+  "response": [
+    {
+      "address": "Address"
+    }
+  ]
+}
+```
+
+# Get User Details
+<b>URL </b> - http://localhost:8080/api/v1/user/profile/admin
+<b>CURL </b>
+```cmd
+curl -X 'GET' \
+  'http://localhost:8080/api/v1/user/profile/admin' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEyMzA1MTcsInVzZXJuYW1lIjoiYWRtaW4ifQ.78EfuvZULiPWj6QGLpT3y0HMDArcQvsD2q6Da2CSL_s'
+```
+<b>Response</b>
+```json
+{
+  "status_code": "200",
+  "status_message": "Profile of Username admin",
+  "response": {
+    "name": "Alok Kumar Sharma",
+    "username": "admin",
+    "address": [
+      {
+        "address": "Address"
+      }
+    ]
+  }
+}
+```
+
+## Operations on Book
 
 # POST - /book/create
 
